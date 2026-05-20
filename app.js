@@ -9,7 +9,7 @@
  */
 
 const CONFIG = {
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwRCtIjyWzL0dc-he_WY39nk2HTptw9RtqAydMMOIAxZ6VXnCB52A0xojt3WmrATxtA/exec',
   MAP_TILE_DARK:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
   MAP_TILE_LIGHT: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   NOMINATIM_URL:  'https://nominatim.openstreetmap.org',
@@ -19,7 +19,7 @@ const CONFIG = {
     maximumAge: 0
   },
   SPEED_FILTER_ALPHA: 0.3,      // EMA smoothing factor for speed
-  SPEEDO_MAX_SPEED: 200,        // km/h max on dial
+  SPEEDO_MAX_SPEED: 150,        // km/h max on dial
   SPEEDO_CANVAS_SIZE: 320,
   AUTO_SAVE_INTERVAL: 30000,    // ms — auto-save trip every 30s
 };
