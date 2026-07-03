@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════════════════
+   MotoDash — tokens.css
+   DESIGN TOKEN SYSTEM (single source of truth)
+   ───────────────────────────────────────────────────────────────────
+   Every visual property used anywhere in the app — color, type scale,
+   spacing, radius, border, shadow, glow, opacity, elevation, motion,
+   z-index — is defined exactly once here. Components reference tokens
+   only; they never hardcode a raw color/px value. This is what makes
+   the 3-theme system (ORIGIN / NEXUS / TECHNO) possible: a theme file
+   only ever overrides the BRAND token layer below, never touches a
+   component file.
+
+   LAYERS (read top to bottom):
+     1. PRIMITIVE   — raw palette swatches, the only place hex appears
+     2. BRAND        — semantic aliases, overridden per theme
+     3. SURFACE      — semantic aliases, overridden per day/night
+     4. SCALE        — typography / spacing / radius / motion / z-index
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+
+    /* ───────────────────────────────────────────────────────────────
+       1. PRIMITIVE PALETTE — raw swatches only. Nothing below this
+       block should introduce a new hex value; everything else aliases
+       these or is computed from them via color-mix().
+       ─────────────────────────────────────────────────────────────── */
+    --p-black        : #000000;
+    --p-near-black   : #050505;
+    --p-ink-900      : #0a0a0a;
+    --p-ink-800      : #111317;
+    --p-white        : #ffffff;
+
+    --p-teal-500     : #3DDBC4;
+    --p-teal-300     : #B8E8DC;
+
+    --p-ducati-red   : #E2231A;
+    --p-ducati-red-d : #B0150E;
+    --p-ducati-yellow: #FFD500;
+
+    --p-zontes-cyan  : #00D9FF;
+    --p-zontes-blue  : #2E6FFF;
+    --p-zontes-lime  : #39FF14;
+    --p-zontes-orange: #FF9100;
+
+    --p-amber-500    : #FFAA00;
+    --p-red-500      : #FF4444;
+    --p-green-500    : #00FF66;
+
+    /* ───────────────────────────────────────────────────────────────
+       2. BRAND TOKENS — the per-theme axis. Default values here are
+       the ORIGIN theme; NEXUS/TECHNO override this exact block only
+       (see css/themes/*.css). Nothing outside the theme files may
+       redefine these names.
+       ─────────────────────────────────────────────────────────────── */
+    --brand-primary      : var(--p-teal-500);
+    --brand-secondary    : var(--p-teal-300);
+    --brand-border       : rgba(61,219,196,0.22);
+    --brand-glow-primary : 0 0 22px rgba(61,219,196,0.35);
+    --brand-glow-secondary: 0 0 22px rgba(184,232,220,0.35);
+    --brand-radius       : 8px;     /* component corner language for this theme */
+    --brand-gauge-style  : 'ring';  /* informational only — read by JS via data attr, not CSS */
+    --brand-left-w       : 35%;
+
+    /* Status colors — same across all themes (universal meaning) */
+    --status-warning : var(--p-amber-500);
+    --status-danger  : var(--p-red-500);
+    --status-success : var(--p-green-500);
+    --glow-warning   : 0 0 18px rgba(255,170,0,.45);
+    --glow-danger    : 0 0 18px rgba(255,68,68,.5);
+    --glow-success   : 0 0 18px rgba(0,255,102,.4);
+
+    /* ───────────────────────────────────────────────────────────────
+       3. SURFACE TOKENS — the day/night axis. Default values here are
+       NIGHT mode; css/themes apply a [data-time="day"] override block.
+       Brand colors above are intentionally untouched by this axis.
+       ─────────────────────────────────────────────────────────────── */
+    --surf-bg-primary   : var(--p-near-black);
+    --surf-bg-secondary : #080C10;
+    --surf-bg-panel     : rgba(255,255,255,0.025);
+    --surf-text         : var(--p-white);
+    --surf-text-dim     : rgba(255,255,255,0.45);
+    --surf-text-muted   : rgba(255,255,255,0.18);
+    --surf-text-glow    : rgba(255,255,255,.45);
+
+    --surf-1 : rgba(255,255,255,.02);
+    --surf-2 : rgba(255,255,255,.04);
+    --surf-3 : rgba(255,255,255,.05);
+    --surf-4 : rgba(255,255,255,.06);
+    --surf-5 : rgba(255,255,255,.08);
+    --surf-6 : rgba(255,255,255,.1);
+    --surf-7 : rgba(255,255,255,.12);
+
+    --surf-gradient-panel : linear-gradient(165deg,#050C14 0%,#030608 100%);
+    --surf-gradient-art   : linear-gradient(135deg,#0A1A2E,#050A10);
+
+    /* ───────────────────────────────────────────────────────────────
+       4a. TYPOGRAPHY SCALE
+       ─────────────────────────────────────────────────────────────── */
+    --font-display : 'Orbitron', sans-serif;          /* speed, headings, brand */
+    --font-ui      : 'Rajdhani', sans-serif;           /* body, labels, controls */
+    --font-mono    : 'Share Tech Mono', monospace;     /* telemetry / data readouts */
+
+    --fs-3xs : 7px;   --fs-2xs : 8px;   --fs-xs  : 9px;   --fs-sm  : 10px;
+    --fs-base: 12px;  --fs-md  : 13px;  --fs-lg  : 14px;  --fs-xl  : 16px;
+    --fs-2xl : 22px;  --fs-3xl : 28px;  --fs-gauge-sm: 42px;
+    --fs-gauge-md: 54px; --fs-gauge-lg: 62px;
+
+    --lh-tight: 1;     --lh-normal: 1.4;   --lh-loose: 1.6;
+    --ls-tight: -1px;  --ls-normal: 0;     --ls-wide: 2px;  --ls-wider: 3px; --ls-widest: 5px;
+
+    /* ───────────────────────────────────────────────────────────────
+       4b. SPACING SCALE — 4px base unit
+       ─────────────────────────────────────────────────────────────── */
+    --space-0: 0;     --space-1: 2px;   --space-2: 4px;   --space-3: 6px;
+    --space-4: 8px;   --space-5: 10px;  --space-6: 12px;  --space-7: 14px;
+    --space-8: 16px;  --space-9: 20px;  --space-10: 24px; --space-11: 32px;
+    --space-12: 40px;
+
+    /* ───────────────────────────────────────────────────────────────
+       4c. RADIUS SCALE
+       ─────────────────────────────────────────────────────────────── */
+    --radius-none: 0;     --radius-xs: 2px;    --radius-sm: 4px;
+    --radius-md  : 6px;   --radius-lg: 8px;    --radius-xl: 12px;
+    --radius-2xl : 14px;  --radius-3xl: 20px;  --radius-full: 999px;
+
+    /* ───────────────────────────────────────────────────────────────
+       4d. BORDER WIDTH
+       ─────────────────────────────────────────────────────────────── */
+    --border-w-hair : 1px;
+    --border-w-thin : 1.5px;
+    --border-w-md   : 2px;
+
+    /* ───────────────────────────────────────────────────────────────
+       4e. SHADOW / ELEVATION SCALE — neutral drop shadows (not glow,
+       see brand-glow-* for theme-colored glow)
+       ─────────────────────────────────────────────────────────────── */
+    --elevation-0: none;
+    --elevation-1: 0 1px 3px rgba(0,0,0,.3);
+    --elevation-2: 0 4px 12px rgba(0,0,0,.4);
+    --elevation-3: 0 8px 28px rgba(0,0,0,.5);
+    --elevation-4: 0 16px 48px rgba(0,0,0,.6);
+
+    /* ───────────────────────────────────────────────────────────────
+       4f. OPACITY SCALE
+       ─────────────────────────────────────────────────────────────── */
+    --opacity-disabled: .35;
+    --opacity-dim     : .55;
+    --opacity-muted   : .18;
+    --opacity-full    : 1;
+
+    /* ───────────────────────────────────────────────────────────────
+       4g. MOTION SCALE — durations + easings (GPU-friendly: only
+       transform/opacity/filter are animated app-wide; layout
+       properties are never transitioned)
+       ─────────────────────────────────────────────────────────────── */
+    --ease-standard : cubic-bezier(.4,0,.2,1);
+    --ease-decel    : cubic-bezier(0,0,.2,1);
+    --ease-accel    : cubic-bezier(.4,0,1,1);
+    --ease-spring   : cubic-bezier(.34,1.56,.64,1);
+
+    --motion-instant: 80ms;
+    --motion-fast   : 150ms;
+    --motion-base   : 220ms;
+    --motion-slow   : 400ms;
+    --motion-slower : 650ms;
+
+    /* ───────────────────────────────────────────────────────────────
+       4h. Z-INDEX SCALE — every stacking context in the app, named.
+       New components must slot into this scale rather than inventing
+       arbitrary numbers.
+       ─────────────────────────────────────────────────────────────── */
+    --z-base        : 1;
+    --z-grid-overlay: 0;
+    --z-panel       : 10;
+    --z-map-overlay : 500;
+    --z-status-bar  : 200;
+    --z-dock        : 200;
+    --z-quick-settings: 600;
+    --z-toast       : 9999;
+    --z-startup     : 10000;
+
+    /* ───────────────────────────────────────────────────────────────
+       4i. LAYOUT — non-token-scale structural constants
+       ─────────────────────────────────────────────────────────────── */
+    --layout-status-h : 30px;
+    --layout-dock-h   : 66px;
+    --layout-left-w   : var(--brand-left-w);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SURFACE TOKENS — DAY MODE override
+   Only the surface (light/dark) layer flips; brand tokens (color
+   theme identity) are untouched so any theme × day/night combination
+   is automatically correct with zero extra code.
+   ═══════════════════════════════════════════════════════════════════ */
+[data-time="day"] {
+    --surf-bg-primary   : #E7ECF1;
+    --surf-bg-secondary : #F4F7FA;
+    --surf-bg-panel     : rgba(10,25,40,.04);
+    --surf-text         : #15222E;
+    --surf-text-dim     : rgba(15,30,45,.58);
+    --surf-text-muted   : rgba(15,30,45,.34);
+    --surf-text-glow    : rgba(10,25,40,.18);
+
+    --surf-1: rgba(10,25,40,.03);  --surf-2: rgba(10,25,40,.05);
+    --surf-3: rgba(10,25,40,.06);  --surf-4: rgba(10,25,40,.08);
+    --surf-5: rgba(10,25,40,.1);   --surf-6: rgba(10,25,40,.13);
+    --surf-7: rgba(10,25,40,.18);
+
+    --surf-gradient-panel: linear-gradient(165deg,#EFF3F7 0%,#E2E8EE 100%);
+    --surf-gradient-art  : linear-gradient(135deg,#E4EAF1,#D6DEE7);
+
+    --elevation-1: 0 1px 3px rgba(20,30,40,.08);
+    --elevation-2: 0 4px 12px rgba(20,30,40,.1);
+    --elevation-3: 0 8px 28px rgba(20,30,40,.14);
+    --elevation-4: 0 16px 48px rgba(20,30,40,.18);
+}

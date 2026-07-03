@@ -1,0 +1,37 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Theme: NEXUS
+   Identity   : Premium motorsport luxury — high contrast, minimal,
+                confident. Built from the Ducati Multistrada V4 TFT
+                reference photo: deep black field, a single decisive
+                red needle/accent, yellow secondary accent, crisp
+                white typography. Nothing decorative; every element
+                earns its place exactly like a flagship sport-tourer
+                cluster does.
+   Reference  : Ducati Multistrada V4 dashboard (user-supplied photo).
+   Palette    : Black / Dark Gray / White / Ducati Red / Ducati Yellow.
+   Gauge shape: Minimal dual-zone ring + large central gear-style
+                readout + straight tick marks (see speedometer.js
+                NEXUS face geometry).
+   ═══════════════════════════════════════════════════════════════════ */
+[data-color-theme="nexus"] {
+    --brand-primary       : var(--p-ducati-red);
+    --brand-secondary     : var(--p-ducati-yellow);
+    --brand-border        : rgba(226,35,26,0.28);
+    --brand-glow-primary  : 0 0 24px rgba(226,35,26,0.45);
+    --brand-glow-secondary: 0 0 20px rgba(255,213,0,0.4);
+    --brand-radius        : var(--radius-sm);   /* tight, motorsport-precise corners */
+    --brand-left-w        : 36%;
+}
+
+/* NEXUS-specific surface tint: true black field (not blue-grey black)
+   reinforces the "deep black bezel" feel from the reference photo. */
+[data-color-theme="nexus"][data-time="night"] {
+    --surf-bg-primary  : #060606;
+    --surf-bg-secondary: #0a0a0a;
+    --surf-gradient-panel: linear-gradient(165deg,#0d0d0d 0%,#040404 100%);
+}
+[data-color-theme="nexus"][data-time="day"] {
+    --surf-bg-primary  : #F5F5F5;
+    --surf-bg-secondary: #FFFFFF;
+    --surf-gradient-panel: linear-gradient(165deg,#FAFAFA 0%,#EFEFEF 100%);
+}

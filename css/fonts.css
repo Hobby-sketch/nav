@@ -1,0 +1,90 @@
+/**
+ * fonts.css — Self-hosted font declarations
+ * Replaces Google Fonts CDN (fonts.googleapis.com / fonts.gstatic.com)
+ *
+ * WHY SELF-HOSTED:
+ *   - Eliminates third-party domain calls entirely (privacy + security)
+ *   - No risk of Google Fonts setting cookies or logging requests
+ *   - Works fully offline once cached by Service Worker
+ *   - Removes dependency on Google's CDN uptime
+ *
+ * Source: @fontsource (https://www.npmjs.com/org/fontsource) — official
+ * Google Fonts repackaged as self-hostable npm packages, byte-identical
+ * to the original font files Google serves.
+ */
+
+/* ── Orbitron — display / speedometer numerals ──────────────────── */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../vendor/fonts/orbitron-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../vendor/fonts/orbitron-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../vendor/fonts/orbitron-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../vendor/fonts/orbitron-latin-900-normal.woff2') format('woff2');
+}
+
+/* ── Rajdhani — UI / body text ───────────────────────────────────── */
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../vendor/fonts/rajdhani-latin-300-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../vendor/fonts/rajdhani-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../vendor/fonts/rajdhani-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../vendor/fonts/rajdhani-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../vendor/fonts/rajdhani-latin-700-normal.woff2') format('woff2');
+}
+
+/* ── Share Tech Mono — data / monospace readouts ─────────────────── */
+@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../vendor/fonts/share-tech-mono-latin-400-normal.woff2') format('woff2');
+}

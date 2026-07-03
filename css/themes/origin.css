@@ -1,0 +1,17 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Theme: ORIGIN
+   Identity   : Clean OEM instrument cluster — segmented digital speed
+                readout, honest GPS-only telemetry, no embellishment.
+   Reference  : Kept close to MotoDash's original look; polish only.
+   Palette    : Teal / Mint on near-black (night) or off-white (day).
+   Gauge shape: Numbered 270° ring + status icon column + info strip.
+   ═══════════════════════════════════════════════════════════════════ */
+[data-color-theme="origin"] {
+    --brand-primary       : var(--p-teal-500);
+    --brand-secondary     : var(--p-teal-300);
+    --brand-border        : rgba(61,219,196,0.22);
+    --brand-glow-primary  : 0 0 22px rgba(61,219,196,0.35);
+    --brand-glow-secondary: 0 0 22px rgba(184,232,220,0.35);
+    --brand-radius        : var(--radius-lg);
+    --brand-left-w        : 35%;
+}

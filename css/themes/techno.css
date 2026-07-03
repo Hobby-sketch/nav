@@ -1,0 +1,43 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Theme: TECHNO
+   Identity   : Futuristic cyber-industrial HUD — toothed/gear-ring
+                instrument bezel, layered telemetry columns, electric
+                accent colors. Built from the Zontes 368E TFT reference
+                photo: the gear-toothed outer ring around the speed
+                scale, the dense left-side data column (trip/avg/
+                pressure-style readouts), the green "S" mode badge,
+                and the arc-style fuel/temperature gauge along the
+                bottom-right of the dial.
+   Reference  : Zontes 368E dashboard (user-supplied photo).
+   Palette    : Black / Dark Grey / Neon Blue / Cyan / Lime / White /
+                Orange accent.
+   Gauge shape: Gear-toothed ring (12 teeth) + LED progress arc +
+                dense status/data column (see speedometer.js TECHNO
+                face geometry).
+   ═══════════════════════════════════════════════════════════════════ */
+[data-color-theme="techno"] {
+    --brand-primary       : var(--p-zontes-cyan);
+    --brand-secondary     : var(--p-zontes-lime);
+    --brand-border        : rgba(0,217,255,0.3);
+    --brand-glow-primary  : 0 0 22px rgba(0,217,255,0.5);
+    --brand-glow-secondary: 0 0 20px rgba(57,255,20,0.45);
+    --brand-radius        : var(--radius-xs);   /* angular, industrial corners */
+    --brand-left-w        : 36%;
+}
+
+/* TECHNO-specific surface tint: cool blue-black industrial bezel,
+   matching the Zontes TFT's slightly blue-tinted dark housing. */
+[data-color-theme="techno"][data-time="night"] {
+    --surf-bg-primary  : #07090c;
+    --surf-bg-secondary: #0a0e13;
+    --surf-gradient-panel: linear-gradient(165deg,#0c1116 0%,#05070a 100%);
+}
+[data-color-theme="techno"][data-time="day"] {
+    --surf-bg-primary  : #E3E9ED;
+    --surf-bg-secondary: #EEF2F5;
+    --surf-gradient-panel: linear-gradient(165deg,#EAF0F3 0%,#DCE4E9 100%);
+}
+
+/* Orange accent — used sparingly for warning-adjacent / special POI
+   style elements unique to the Techno identity (e.g. mode badge). */
+[data-color-theme="techno"] { --techno-accent-orange: var(--p-zontes-orange); }

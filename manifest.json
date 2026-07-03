@@ -1,0 +1,43 @@
+{
+  "name": "MotoDash — Premium Moto Dashboard",
+  "short_name": "MotoDash",
+  "description": "Premium motorcycle dashboard with GPS speedometer, maps navigation, turn-by-turn routing, Bluetooth, and voice control. No backend required.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "theme_color": "#050505",
+  "background_color": "#050505",
+  "lang": "en",
+  "categories": ["navigation", "utilities", "travel"],
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Open Maps",
+      "short_name": "Maps",
+      "description": "Open GPS navigation map",
+      "url": "./index.html#maps"
+    }
+  ],
+  "prefer_related_applications": false
+}

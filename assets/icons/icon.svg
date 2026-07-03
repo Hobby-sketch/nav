@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#050505"/>
+
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="240" r="185" fill="none" stroke="#00AEEF" stroke-width="4" opacity="0.15"/>
+
+  <!-- Speedometer track arc (270° sweep from 135° to 45°) -->
+  <circle cx="256" cy="240" r="160"
+          fill="none"
+          stroke="#0a2030"
+          stroke-width="24"
+          stroke-dasharray="703 44"
+          stroke-dashoffset="-22"
+          stroke-linecap="round"/>
+
+  <!-- Speedometer fill arc -->
+  <circle cx="256" cy="240" r="160"
+          fill="none"
+          stroke="#00AEEF"
+          stroke-width="24"
+          stroke-dasharray="500 247"
+          stroke-dashoffset="-22"
+          stroke-linecap="round"/>
+
+  <!-- Inner accent ring -->
+  <circle cx="256" cy="240" r="130" fill="none" stroke="#00AEEF" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- Center hub -->
+  <circle cx="256" cy="240" r="18" fill="#00AEEF" opacity="0.9"/>
+  <circle cx="256" cy="240" r="10" fill="#ffffff"/>
+
+  <!-- Needle -->
+  <line x1="256" y1="240" x2="370" y2="130"
+        stroke="#00AEEF" stroke-width="6" stroke-linecap="round"
+        opacity="0.95"/>
+
+  <!-- Speed marks -->
+  <line x1="256" y1="85"  x2="256" y2="100" stroke="#00AEEF" stroke-width="3" stroke-linecap="round"/>
+  <line x1="370" y1="130" x2="381" y2="119" stroke="#00AEEF" stroke-width="3" stroke-linecap="round"/>
+  <line x1="411" y1="240" x2="426" y2="240" stroke="#00AEEF" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Text: MD monogram -->
+  <text x="256" y="230" text-anchor="middle"
+        fill="white" font-size="52" font-weight="900"
+        font-family="Orbitron, Arial Black, sans-serif"
+        letter-spacing="-2">MD</text>
+
+  <!-- Text: km/h label -->
+  <text x="256" y="268" text-anchor="middle"
+        fill="#00AEEF" font-size="18" font-weight="400"
+        font-family="Orbitron, Arial, sans-serif"
+        letter-spacing="5">km/h</text>
+
+  <!-- Bottom label bar -->
+  <rect x="100" y="430" width="312" height="3" rx="2" fill="#00AEEF" opacity="0.4"/>
+
+  <!-- App name -->
+  <text x="256" y="472" text-anchor="middle"
+        fill="white" font-size="28" font-weight="900"
+        font-family="Orbitron, Arial Black, sans-serif"
+        letter-spacing="8" opacity="0.85">MOTODASH</text>
+</svg>
