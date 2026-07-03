@@ -2,6 +2,10 @@
 <html lang="en" data-color-theme="origin" data-time="night">
 <head>
   <meta charset="UTF-8">
+  <!-- Force browsers to always revalidate HTML — prevents stale
+       service-worker cache from serving an old panel structure -->
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
 
   <!--
     ════════════════════════════════════════════════════════════════
@@ -468,9 +472,25 @@
             </div>
           </div>
 
-          <!-- Map -->
+          <!-- Map canvas (filled by MapLibre GL JS) -->
           <div id="map-container">
             <div id="map"></div>
+            <!-- Loading state — shown while MapLibre initializes, hidden by maps.js -->
+            <div id="map-loading" style="
+              position:absolute;inset:0;z-index:10;
+              display:flex;flex-direction:column;align-items:center;justify-content:center;
+              background:var(--surf-bg-primary,#050505);gap:14px;
+              font-family:var(--font-display,Orbitron,sans-serif);
+              font-size:12px;letter-spacing:3px;color:var(--brand-primary,#3DDBC4);">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   style="animation:spin 1.2s linear infinite">
+                <circle cx="12" cy="12" r="10" stroke-opacity=".2"/>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+              </svg>
+              <span>LOADING MAP…</span>
+              <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+            </div>
           </div>
 
         </div><!-- /map-area -->
@@ -512,7 +532,7 @@
 
 
       <!-- ─── TRIP PANEL ─── -->
-      <div id="panel-trip" class="content-panel" data-panel="trip">
+      <div id="panel-trip" class="content-panel" data-panel="trip" style="display:none">
         <div class="panel-header">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -571,7 +591,7 @@
 
 
       <!-- ─── PHONE PANEL ─── -->
-      <div id="panel-phone" class="content-panel" data-panel="phone">
+      <div id="panel-phone" class="content-panel" data-panel="phone" style="display:none">
         <div class="panel-header">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.5 11.5
@@ -617,7 +637,7 @@
 
 
       <!-- ─── MUSIC PANEL ─── -->
-      <div id="panel-music" class="content-panel" data-panel="music">
+      <div id="panel-music" class="content-panel" data-panel="music" style="display:none">
         <div class="panel-header">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 18V5l12-2v13"/>
@@ -745,7 +765,7 @@
 
 
       <!-- ─── VOICE PANEL ─── -->
-      <div id="panel-voice" class="content-panel" data-panel="voice">
+      <div id="panel-voice" class="content-panel" data-panel="voice" style="display:none">
         <div class="panel-header">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
@@ -803,7 +823,7 @@
 
 
       <!-- ─── BLUETOOTH PANEL ─── -->
-      <div id="panel-bluetooth" class="content-panel" data-panel="bluetooth">
+      <div id="panel-bluetooth" class="content-panel" data-panel="bluetooth" style="display:none">
         <div class="panel-header">
           <svg width="20" height="22" viewBox="0 0 16 24" fill="none"
                stroke="currentColor" stroke-width="2">
@@ -843,7 +863,7 @@
 
 
       <!-- ─── SETTINGS PANEL ─── -->
-      <div id="panel-settings" class="content-panel" data-panel="settings">
+      <div id="panel-settings" class="content-panel" data-panel="settings" style="display:none">
         <div class="panel-header">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2">

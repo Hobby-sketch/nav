@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v3-maplibre';
+const CACHE_VERSION = 'v4-bugfix-panels';
 const CACHE_SHELL   = `motodash-shell-${CACHE_VERSION}`;
 const CACHE_API     = `motodash-api-${CACHE_VERSION}`;
 const TTL_API       = 60 * 60 * 1000;   // 1 hour

@@ -33,10 +33,11 @@ class MotoDash {
         this._setupDialPad();
         this._applyAutoTheme();
         this._registerSW();
-        this._setupPWAInstall();   // Android "Add to Home Screen" banner
+        this._setupPWAInstall();
         this._subscribeEvents();
 
-        /* Switch to maps on start */
+        /* Switch to maps on start — using switchPanel so inline styles
+           are applied immediately (not waiting for CSS to load) */
         this.switchPanel('maps');
 
         setTimeout(() => Utils.showToast('MotoDash ready — ride safe! 🏍', 'success'), 800);
@@ -54,24 +55,36 @@ class MotoDash {
     switchPanel(name) {
         this.currentPanel = name;
 
-        document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+        // ── LAYER 1: inline styles (immune to CSS cache / stylesheet errors) ──
+        // element.style.display always wins over stylesheet rules, so this
+        // works correctly even when the browser is serving a stale CSS file
+        // from a previous service-worker cache version.
+        document.querySelectorAll('.content-panel').forEach(p => {
+            p.style.display = 'none';
+            p.classList.remove('active');
+        });
+
         document.querySelectorAll('.dock-btn').forEach(b =>
             b.classList.toggle('active', b.dataset.panel === name)
         );
 
         const target = document.getElementById(`panel-${name}`);
-        if (target) target.classList.add('active');
+        if (target) {
+            // flex + flex-direction:column so children fill height correctly
+            target.style.display = 'flex';
+            target.style.flexDirection = 'column';
+            target.classList.add('active');
+        } else {
+            console.warn(`[MotoDash] switchPanel: #panel-${name} not found`);
+        }
 
-        /*
-         * The map provider needs to be told whenever its container
-         * becomes visible/resized (true for MapLibre's WebGL canvas
-         * just as it was for Leaflet). Uses a 300ms delay to cover
-         * both: (a) the MapsModule init delay on first load, and
-         * (b) the CSS fade-slide animation on subsequent switches.
-         * Goes through the provider-agnostic resize() — maps.js never
-         * exposes which engine is active.
-         */
+        // MapLibre WebGL canvas must be notified when its container
+        // changes from display:none to display:flex — otherwise the canvas
+        // has zero size and renders a blank grey rectangle.
         if (name === 'maps') {
+            // Double setTimeout: first tick lets the flex layout complete,
+            // second tick ensures MapLibre's internal RAF has fired.
+            setTimeout(() => window.mapsModule?.resize(), 50);
             setTimeout(() => window.mapsModule?.resize(), 300);
         }
     }
