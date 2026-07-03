@@ -1,146 +1,154 @@
 /**
- * MotoDash — sw.js  (Service Worker)
+ * MotoDash — sw.js  (v3 — MapLibre + PMTiles build)
  *
- * SECURITY & CACHE ARCHITECTURE
- * ════════════════════════════════════════════════════════════════
- * As of this version, ALL static libraries (Leaflet, Leaflet Routing
- * Machine, jsmediatags, fonts) are SELF-HOSTED under vendor/ and css/ —
- * there is no third-party CDN dependency for any static file. The only
- * external network calls this app makes are to 3 live data APIs that
- * cannot be self-hosted (they are dynamic services, not static files):
+ * WHAT THIS SW DOES:
+ * ──────────────────
+ * 1. Caches the entire app shell on first install so the app loads
+ *    instantly and works offline (except live data APIs).
+ * 2. MapLibre font glyphs (.pbf) are cached aggressively — they never
+ *    change and are the heaviest asset to re-download.
+ * 3. Nominatim search responses are cached 1 hour (stale-ok offline).
+ * 4. OSRM routes are NEVER cached (routes must always reflect live
+ *    road conditions).
+ * 5. PMTiles range-requests are NOT intercepted — the pmtiles.js
+ *    library handles its own caching via the browser's HTTP cache.
  *
- *   1. nominatim.openstreetmap.org — address/place search results
- *   2. router.project-osrm.org     — turn-by-turn route calculation
- *   3. *.basemaps.cartocdn.com     — map tile images
- *
- * CACHE RULES (explicit TTL per cache type — no indefinite caching):
- * ────────────────────────────────────────────────────────────────
- *   SHELL  → Stale-While-Revalidate, no TTL (versioned by CACHE_VERSION)
- *   TILES  → Cache-First, TTL 7 days  (map imagery changes rarely)
- *   API    → Network-First, TTL 1 hour (search results go stale fast)
- *   ROUTE  → Network-Only, never cached (routes must always be fresh)
- *
- * COOKIE POLICY:
- * This Service Worker and the app it serves NEVER set cookies. All
- * persistent state uses localStorage (same-origin only, never sent
- * over the network). This file does not read or forward any cookie
- * header for any request it intercepts.
+ * CACHE VERSION: bump on every deploy that changes any cached file.
  */
-
 'use strict';
 
-/* Bump this version string on every deploy that changes cached files.
- * Old caches are purged automatically in the 'activate' event below. */
-const CACHE_VERSION = 'v2-selfhosted';
+const CACHE_VERSION = 'v3-maplibre';
+const CACHE_SHELL   = `motodash-shell-${CACHE_VERSION}`;
+const CACHE_API     = `motodash-api-${CACHE_VERSION}`;
+const TTL_API       = 60 * 60 * 1000;   // 1 hour
 
-const CACHE_SHELL = `motodash-shell-${CACHE_VERSION}`;
-const CACHE_TILES = `motodash-tiles-${CACHE_VERSION}`;
-const CACHE_API   = `motodash-api-${CACHE_VERSION}`;
-
-/* TTL in milliseconds — explicit expiry per cache type */
-const TTL_TILES = 7  * 24 * 60 * 60 * 1000;  // 7 days
-const TTL_API   = 1  * 60 * 60 * 1000;       // 1 hour
-
-/* App shell — every file is now same-origin (self-hosted) */
 const SHELL_URLS = [
+    /* App pages */
     './index.html',
-    './css/style.css',
+    './manifest.json',
+
+    /* CSS */
     './css/fonts.css',
+    './css/tokens.css',
+    './css/themes/origin.css',
+    './css/themes/nexus.css',
+    './css/themes/techno.css',
+    './css/style.css',
+
+    /* App JS */
     './js/utilities.js',
+    './js/core/config.js',
     './js/trip.js',
     './js/speedometer.js',
+    './js/core/map-provider-interface.js',
+    './js/map-providers/maplibre-provider.js',
     './js/maps.js',
     './js/bluetooth.js',
     './js/voice.js',
     './js/media.js',
+    './js/widgets/weather.js',
     './js/app.js',
-    './manifest.json',
-    './assets/icons/icon.svg',
 
-    /* Self-hosted vendor libraries */
-    './vendor/leaflet/leaflet.css',
-    './vendor/leaflet/leaflet.js',
-    './vendor/leaflet/images/layers.png',
-    './vendor/leaflet/images/layers-2x.png',
-    './vendor/leaflet/images/marker-icon.png',
-    './vendor/leaflet/images/marker-icon-2x.png',
-    './vendor/leaflet/images/marker-shadow.png',
-    './vendor/leaflet-routing-machine/leaflet-routing-machine.css',
-    './vendor/leaflet-routing-machine/leaflet-routing-machine.js',
-    './vendor/leaflet-routing-machine/leaflet.routing.icons.png',
-    './vendor/leaflet-routing-machine/routing-icon.png',
+    /* Map style JSONs — theme × day/night matrix */
+    './js/map-styles/origin-night.json',
+    './js/map-styles/origin-day.json',
+    './js/map-styles/nexus-night.json',
+    './js/map-styles/nexus-day.json',
+    './js/map-styles/techno-night.json',
+    './js/map-styles/techno-day.json',
+    './js/map-styles/mapstyle-street.json',
+    './js/map-styles/mapstyle-dark.json',
+    './js/map-styles/mapstyle-grayscale.json',
+    './js/map-styles/mapstyle-minimal.json',
+
+    /* MapLibre GL JS engine (self-hosted) */
+    './vendor/maplibre/maplibre-gl.js',
+    './vendor/maplibre/maplibre-gl-csp-worker.js',
+    './vendor/maplibre/maplibre-gl.css',
+
+    /* PMTiles protocol library */
+    './vendor/pmtiles/pmtiles.js',
+
+    /* Map sprite sheets (dark + light, 1x + 2x) */
+    './vendor/maplibre/sprites/dark.png',
+    './vendor/maplibre/sprites/dark@2x.png',
+    './vendor/maplibre/sprites/dark.json',
+    './vendor/maplibre/sprites/light.png',
+    './vendor/maplibre/sprites/light@2x.png',
+    './vendor/maplibre/sprites/light.json',
+
+    /* Media tag reader */
     './vendor/jsmediatags/jsmediatags.js',
 
-    /* Self-hosted fonts */
-    './vendor/fonts/orbitron-latin-400-normal.woff2',
-    './vendor/fonts/orbitron-latin-600-normal.woff2',
-    './vendor/fonts/orbitron-latin-700-normal.woff2',
-    './vendor/fonts/orbitron-latin-900-normal.woff2',
-    './vendor/fonts/rajdhani-latin-300-normal.woff2',
-    './vendor/fonts/rajdhani-latin-400-normal.woff2',
-    './vendor/fonts/rajdhani-latin-500-normal.woff2',
-    './vendor/fonts/rajdhani-latin-600-normal.woff2',
-    './vendor/fonts/rajdhani-latin-700-normal.woff2',
-    './vendor/fonts/share-tech-mono-latin-400-normal.woff2'
+    /* PWA icons */
+    './assets/icons/icon.svg',
+    './assets/icons/icon-192.png',
+    './assets/icons/icon-512.png',
+    './assets/icons/icon-192-maskable.png',
+    './assets/icons/icon-512-maskable.png',
 ];
 
-// ═══════════════════════════════════════════════════════════
-//  INSTALL — cache shell files individually
-//  (one missing file, e.g. icon-192.png not yet generated,
-//   must NOT abort the entire install — so we fetch one by one
-//   instead of using cache.addAll which fails atomically)
-// ═══════════════════════════════════════════════════════════
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        (async () => {
-            const cache = await caches.open(CACHE_SHELL);
-            for (const url of SHELL_URLS) {
-                try {
-                    const res = await fetch(url);
-                    if (res.ok) await cache.put(url, res);
-                } catch { /* file not available yet — skip, non-fatal */ }
-            }
-            await self.skipWaiting();
-            console.log('[SW] Installed —', CACHE_VERSION);
-        })()
-    );
+/* ── INSTALL ── */
+self.addEventListener('install', event => {
+    event.waitUntil((async () => {
+        const cache = await caches.open(CACHE_SHELL);
+        // Fetch individually — one missing optional file won't abort install
+        let ok = 0, skip = 0;
+        for (const url of SHELL_URLS) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) { await cache.put(url, res); ok++; }
+                else skip++;
+            } catch { skip++; }
+        }
+        console.log(`[SW] Installed ${CACHE_VERSION} — cached ${ok}, skipped ${skip}`);
+        await self.skipWaiting();
+    })());
 });
 
-// ═══════════════════════════════════════════════════════════
-//  ACTIVATE — purge every cache that doesn't match current version
-// ═══════════════════════════════════════════════════════════
-self.addEventListener('activate', (event) => {
-    const KEEP = new Set([CACHE_SHELL, CACHE_TILES, CACHE_API]);
+/* ── ACTIVATE — purge old caches ── */
+self.addEventListener('activate', event => {
+    const KEEP = new Set([CACHE_SHELL, CACHE_API]);
     event.waitUntil(
         caches.keys()
-            .then(keys => Promise.all(keys.filter(k => !KEEP.has(k)).map(k => caches.delete(k))))
+            .then(keys => Promise.all(
+                keys.filter(k => !KEEP.has(k)).map(k => caches.delete(k))
+            ))
             .then(() => self.clients.claim())
     );
     console.log('[SW] Activated —', CACHE_VERSION);
 });
 
-// ═══════════════════════════════════════════════════════════
-//  FETCH — explicit routing by exact allow-listed destination
-// ═══════════════════════════════════════════════════════════
-self.addEventListener('fetch', (event) => {
+/* ── FETCH ── */
+self.addEventListener('fetch', event => {
     const req = event.request;
     if (req.method !== 'GET') return;
-
     const url = new URL(req.url);
 
-    /* ── Map tiles (CartoDB) → Cache-First, 7-day TTL ──────────── */
-    if (url.hostname.endsWith('.basemaps.cartocdn.com')) {
-        event.respondWith(cacheFirstWithTTL(req, CACHE_TILES, TTL_TILES));
+    /* MapLibre glyph fonts (.pbf) — Cache-First, very long TTL.
+       These are requested per-tile-view; cache them aggressively so
+       labels load instantly after first render even offline. */
+    if (url.pathname.endsWith('.pbf') && url.pathname.includes('/fonts/')) {
+        event.respondWith(cacheFirst(req, CACHE_SHELL));
         return;
     }
 
-    /* ── Nominatim search → Network-First, 1-hour TTL ──────────── */
+    /* PMTiles source — let browser HTTP cache handle it.
+       Range requests from pmtiles.js work correctly with the browser's
+       own cache; intercepting them in the SW would break the Range
+       header handling. */
+    if (url.hostname === 'data.source.coop') {
+        event.respondWith(fetch(req));
+        return;
+    }
+
+    /* Nominatim search — Network-First, 1-hour TTL for offline fallback */
     if (url.hostname === 'nominatim.openstreetmap.org') {
         event.respondWith(networkFirstWithTTL(req, CACHE_API, TTL_API));
         return;
     }
 
-    /* ── OSRM routing → Network-Only, NEVER cached ─────────────── */
+    /* OSRM routing — Network-Only (routes must always be fresh) */
     if (url.hostname === 'router.project-osrm.org') {
         event.respondWith(
             fetch(req).catch(() =>
@@ -151,81 +159,66 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    /* ── Anything else cross-origin → pass through untouched ────── */
+    /* Open-Meteo weather — Network-First, best-effort */
+    if (url.hostname === 'api.open-meteo.com') {
+        event.respondWith(networkFirstWithTTL(req, CACHE_API, TTL_API));
+        return;
+    }
+
+    /* Any other cross-origin — pass through */
     if (url.origin !== self.location.origin) {
         event.respondWith(fetch(req));
         return;
     }
 
-    /* ── Same-origin app shell → Stale-While-Revalidate ─────────── */
+    /* Same-origin app shell — Stale-While-Revalidate */
     event.respondWith(staleWhileRevalidate(req, CACHE_SHELL));
 });
 
-// ═══════════════════════════════════════════════════════════
-//  STRATEGIES — each cached entry is timestamped (X-Cached-At)
-//  so TTL expiry can be checked precisely, not just "cache exists"
-// ═══════════════════════════════════════════════════════════
-
-/** Cache-First with explicit TTL. Expired entries are refetched. */
-async function cacheFirstWithTTL(req, cacheName, ttlMs) {
+/* ── STRATEGIES ── */
+async function cacheFirst(req, cacheName) {
     const cache  = await caches.open(cacheName);
     const cached = await cache.match(req);
-
-    if (cached) {
-        const cachedAt = Number(cached.headers.get('X-Cached-At') || 0);
-        const isExpired = Date.now() - cachedAt > ttlMs;
-        if (!isExpired) return cached;
-    }
-
+    if (cached) return cached;
     try {
         const res = await fetch(req);
-        if (res.ok) await putWithTimestamp(cache, req, res.clone());
+        if (res.ok) await cache.put(req, res.clone());
         return res;
     } catch {
-        return cached || new Response('', { status: 503 });
-    }
-}
-
-/** Network-First with explicit TTL fallback when offline or slow. */
-async function networkFirstWithTTL(req, cacheName, ttlMs) {
-    const cache = await caches.open(cacheName);
-    try {
-        const res = await fetch(req);
-        if (res.ok) await putWithTimestamp(cache, req, res.clone());
-        return res;
-    } catch {
-        const cached = await cache.match(req);
-        if (cached) {
-            const cachedAt = Number(cached.headers.get('X-Cached-At') || 0);
-            if (Date.now() - cachedAt <= ttlMs) return cached;
-        }
         return new Response('', { status: 503 });
     }
 }
 
-/** Stale-While-Revalidate for the app shell — instant load, background update. */
-async function staleWhileRevalidate(req, cacheName) {
-    const cache    = await caches.open(cacheName);
-    const cached   = await cache.match(req);
-    const fetchPrm = fetch(req).then(res => {
-        if (res.ok) cache.put(req, res.clone());
+async function networkFirstWithTTL(req, cacheName, ttlMs) {
+    const cache = await caches.open(cacheName);
+    try {
+        const res = await fetch(req);
+        if (res.ok) {
+            const h = new Headers(res.headers);
+            h.set('X-Cached-At', String(Date.now()));
+            const body    = await res.arrayBuffer();
+            const stamped = new Response(body, { status: res.status, headers: h });
+            await cache.put(req, stamped);
+            return new Response(body, { status: res.status, headers: res.headers });
+        }
         return res;
-    }).catch(() => null);
-    return cached || fetchPrm;
+    } catch {
+        const cached  = await cache.match(req);
+        const cachedAt = Number(cached?.headers?.get('X-Cached-At') || 0);
+        if (cached && (Date.now() - cachedAt) <= ttlMs) return cached;
+        return new Response('', { status: 503 });
+    }
 }
 
-/** Store a response with an X-Cached-At timestamp header for TTL checks. */
-async function putWithTimestamp(cache, req, res) {
-    const headers = new Headers(res.headers);
-    headers.set('X-Cached-At', String(Date.now()));
-    const body  = await res.arrayBuffer();
-    const stamped = new Response(body, { status: res.status, statusText: res.statusText, headers });
-    await cache.put(req, stamped);
+async function staleWhileRevalidate(req, cacheName) {
+    const cache  = await caches.open(cacheName);
+    const cached = await cache.match(req);
+    const revalidate = fetch(req)
+        .then(res => { if (res.ok) cache.put(req, res.clone()); return res; })
+        .catch(() => null);
+    return cached || await revalidate || new Response('', { status: 503 });
 }
 
-// ═══════════════════════════════════════════════════════════
-//  MESSAGES
-// ═══════════════════════════════════════════════════════════
-self.addEventListener('message', (event) => {
+self.addEventListener('message', event => {
     if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });

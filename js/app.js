@@ -33,6 +33,7 @@ class MotoDash {
         this._setupDialPad();
         this._applyAutoTheme();
         this._registerSW();
+        this._setupPWAInstall();   // Android "Add to Home Screen" banner
         this._subscribeEvents();
 
         /* Switch to maps on start */
@@ -451,6 +452,54 @@ class MotoDash {
                 document.querySelectorAll('#voice-language, #qs-language-select').forEach(s => { s.value = sel.value; });
                 window.voiceModule?.setLanguage(sel.value);
             });
+        });
+    }
+
+    // ─────────────────────────────────────────────────────
+    //  PWA INSTALL BANNER (Android Chrome)
+    //  Shows a styled in-app install prompt when Chrome fires
+    //  beforeinstallprompt. Suppressed if already installed as
+    //  standalone/fullscreen, or if user previously dismissed it.
+    // ─────────────────────────────────────────────────────
+    _setupPWAInstall() {
+        // Already running as installed PWA — nothing to do
+        if (window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            window.navigator.standalone) return;
+
+        // User already dismissed the banner this session
+        if (Utils.Storage.get('pwa_banner_dismissed', false)) return;
+
+        let deferredPrompt = null;
+        const banner     = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (banner) banner.style.display = 'flex';
+        });
+
+        installBtn?.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            if (banner) banner.style.display = 'none';
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('[PWA] Install outcome:', outcome);
+            deferredPrompt = null;
+        });
+
+        dismissBtn?.addEventListener('click', () => {
+            if (banner) banner.style.display = 'none';
+            Utils.Storage.set('pwa_banner_dismissed', true);
+        });
+
+        // Auto-hide once installed
+        window.addEventListener('appinstalled', () => {
+            if (banner) banner.style.display = 'none';
+            Utils.showToast('MotoDash berhasil diinstall ✓', 'success');
+            console.log('[PWA] App installed successfully');
         });
     }
 

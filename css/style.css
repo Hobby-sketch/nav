@@ -81,17 +81,38 @@
    2.  RESET + APP SHELL
    ══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html, body {
-    width:100%; height:100%; overflow:hidden;
+html {
+    /* On Android Chrome, 100vh includes the collapsible address bar.
+       100dvh (dynamic) shrinks when the bar appears, so the app
+       always fits exactly in the visible area. 100vh is the fallback
+       for browsers that don't support dvh yet (iOS < 16). */
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+}
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     background:var(--bg-primary); color:var(--clr-text);
     font-family:var(--f-ui); font-size:14px;
     -webkit-font-smoothing:antialiased;
+    /* Prevent text from reflowing when browser chrome shows/hides */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     user-select:none; -webkit-user-select:none;
+    /* iOS momentum scroll fix — only scroll inside explicit containers */
+    overscroll-behavior: none;
 }
 
 #app {
     display:flex; flex-direction:column;
-    width:100vw; height:100vh; overflow:hidden;
+    width:100vw;
+    /* Fill exactly the visible viewport on every browser/OS */
+    height: 100vh;
+    height: 100dvh;
+    min-height: -webkit-fill-available; /* iOS Safari fix */
+    overflow:hidden;
     position:relative;
 }
 #app::before {
@@ -1050,31 +1071,102 @@ html, body {
 
 /* ══════════════════════════════════════════════════════════════════
    DOCK
+   ──────────────────────────────────────────────────────────────────
+   VISIBILITY NOTE: In a browser tab, the Android navigation bar
+   (gesture strip or 3-button nav, ~20-48 px) sits below the dock.
+   env(safe-area-inset-bottom) pushes the dock up so it's never
+   covered. Once installed as PWA (fullscreen), the system nav bar
+   disappears and the dock fills the full bottom edge.
    ══════════════════════════════════════════════════════════════════ */
 #dock {
-    height:var(--dock-h); flex-shrink:0; z-index:200;
+    /* Base height: 66px content area + safe-area at bottom */
+    height: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
+    flex-shrink:0; z-index:200;
     display:flex; align-items:stretch;
-    background:rgba(0,0,0,.75); border-top:1px solid var(--border);
-    backdrop-filter:blur(12px); padding:0 2px;
+    background:rgba(0,0,0,.85);
+    border-top:1px solid var(--border);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    /* Padding pushes buttons up out of the safe area */
+    padding: 0 2px env(safe-area-inset-bottom, 0px);
+    /* Top accent glow line */
+    box-shadow: 0 -1px 0 0 var(--clr-primary),
+                0 -6px 20px -4px color-mix(in srgb, var(--clr-primary) 18%, transparent);
 }
 .dock-btn {
     flex:1; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px;
+    align-items:center; justify-content:center; gap:5px;
     background:transparent; border:none;
     border-top:2px solid transparent;
     color:var(--clr-muted); cursor:pointer;
-    font-family:var(--f-display); font-size:7px; letter-spacing:1.5px;
-    padding:8px 4px; transition:all .2s var(--ease);
+    font-family:var(--f-display); font-size:8px; letter-spacing:1.5px;
+    /* 44px minimum touch target (Apple HIG / Google Material) */
+    min-height:44px; padding:6px 2px;
+    -webkit-tap-highlight-color: transparent;
+    transition:all .18s var(--ease);
+    position:relative;
 }
-.dock-btn:hover  { color:var(--clr-dim); background:rgba(255,255,255,.025); }
+.dock-btn:hover  { color:var(--clr-dim); background:rgba(255,255,255,.03); }
 .dock-btn.active {
-    color:var(--clr-primary); border-top-color:var(--clr-primary);
-    background:color-mix(in srgb, var(--clr-primary) 6%, transparent);
+    color:var(--clr-primary);
+    border-top-color:var(--clr-primary);
+    background:color-mix(in srgb, var(--clr-primary) 7%, transparent);
 }
+/* Ripple on tap (touch feedback) */
+.dock-btn::after {
+    content:''; position:absolute; inset:0; border-radius:2px;
+    background:var(--clr-primary); opacity:0;
+    transition:opacity .15s;
+}
+.dock-btn:active::after { opacity:.08; }
 
 /* ══════════════════════════════════════════════════════════════════
-   TOAST
+   PWA INSTALL BANNER (Android Chrome — beforeinstallprompt)
    ══════════════════════════════════════════════════════════════════ */
+#pwa-install-banner {
+    position:fixed; bottom:calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    left:12px; right:12px; z-index:8000;
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px;
+    background:rgba(4,12,22,.97);
+    border:1px solid var(--clr-primary);
+    border-radius:12px;
+    box-shadow:var(--brand-glow-primary), var(--elevation-4);
+    backdrop-filter:blur(18px);
+    animation:banner-slide-up .35s var(--ease-decel) both;
+}
+@keyframes banner-slide-up {
+    from { transform:translateY(20px); opacity:0; }
+    to   { transform:translateY(0);    opacity:1; }
+}
+.pwa-banner-icon img { border-radius:10px; flex-shrink:0; }
+.pwa-banner-text {
+    flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;
+}
+.pwa-banner-text strong {
+    font-family:var(--f-display); font-size:13px; font-weight:700;
+    color:var(--clr-text); letter-spacing:.5px;
+}
+.pwa-banner-text span {
+    font-size:11px; color:var(--clr-dim); line-height:1.4;
+}
+.pwa-btn-install {
+    flex-shrink:0; padding:8px 16px;
+    background:var(--clr-primary);
+    border:none; border-radius:8px;
+    color:#000; font-family:var(--f-display); font-size:11px;
+    font-weight:700; letter-spacing:1px; cursor:pointer;
+    transition:opacity .15s;
+}
+.pwa-btn-install:hover { opacity:.85; }
+.pwa-btn-dismiss {
+    flex-shrink:0; padding:8px 10px;
+    background:transparent; border:1px solid var(--surf-5);
+    border-radius:8px; color:var(--clr-muted);
+    font-size:11px; cursor:pointer; letter-spacing:.5px;
+    transition:all .15s;
+}
+.pwa-btn-dismiss:hover { border-color:var(--clr-dim); color:var(--clr-dim); }
 .toast {
     position:fixed; bottom:calc(var(--dock-h) + 10px); left:50%;
     transform:translateX(-50%) translateY(12px); z-index:9999;
@@ -1091,11 +1183,15 @@ html, body {
 .toast.toast-info    { border-color:var(--clr-primary);   color:var(--clr-primary);   }
 
 /* ══════════════════════════════════════════════════════════════════
-   PWA SAFE-AREA (notch / home-indicator insets)
+   PWA SAFE-AREA — notch / status-bar top inset
+   (bottom safe-area is applied directly on #dock above, always,
+   so the dock is never overlapped by Android gesture bar in browser
+   OR the home indicator bar after PWA installation)
    ══════════════════════════════════════════════════════════════════ */
-@media (display-mode: standalone) {
-    #status-bar { padding-top: env(safe-area-inset-top, 0); }
-    #dock       { padding-bottom: env(safe-area-inset-bottom, 0); }
+#status-bar {
+    /* Always reserve space for notch/status-bar on devices that have one */
+    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(var(--layout-status-h) + env(safe-area-inset-top, 0px));
 }
 
 /* ══════════════════════════════════════════════════════════════════
