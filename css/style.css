@@ -574,30 +574,65 @@ body {
    ══════════════════════════════════════════════════════════════════ */
 #right-panel {
     flex:1; display:flex; flex-direction:column; overflow:hidden;
-    position:relative;
+    position:relative;   /* ← required: panels are positioned absolute inside */
+    min-width:0;
 }
 
-.panel {
-    position:absolute; inset:0; display:none;
+/* .content-panel — matches HTML class + JS toggle target.
+   All panels sit in the same slot (position:absolute + inset:0);
+   only the .active one is visible. Was incorrectly .panel before. */
+.content-panel {
+    position:absolute; inset:0;
+    display:none;                        /* ← all hidden by default */
     flex-direction:column; overflow-y:auto;
     scrollbar-width:thin; scrollbar-color:var(--border) transparent;
 }
-.panel::-webkit-scrollbar { width:3px; }
-.panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-.panel.active { display:flex; }
+.content-panel::-webkit-scrollbar { width:3px; }
+.content-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.content-panel.active { display:flex; }  /* ← only active panel visible */
+
+/* Maps panel must never scroll — map canvas fills it absolutely */
+#panel-maps { overflow:hidden !important; }
 .panel-header {
     display:flex; align-items:center; gap:10px;
     padding:11px 15px; border-bottom:1px solid var(--border);
     background:var(--surf-1); flex-shrink:0;
+    font-family:var(--f-display); font-size:11px; font-weight:700;
+    letter-spacing:3px; color:var(--clr-text);
 }
+.panel-header svg { color:var(--clr-primary); flex-shrink:0; }
 .panel-title {
     font-family:var(--f-display); font-size:11px; font-weight:700;
     letter-spacing:3px; color:var(--clr-text); flex:1;
 }
 .panel-body {
     flex:1; display:flex; flex-direction:column;
-    gap:10px; padding:14px;
+    gap:10px; padding:14px; overflow-y:auto;
 }
+
+/* ── Trip Panel ── */
+.trip-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.trip-card {
+    background:var(--surf-2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:11px 13px;
+    display:flex; flex-direction:column;
+}
+.trip-card.full-width { grid-column:1/-1; }
+.trip-label {
+    font-family:var(--f-mono); font-size:8px;
+    color:var(--clr-muted); letter-spacing:2px; margin-bottom:5px;
+}
+.trip-value {
+    font-family:var(--f-display); font-size:22px; font-weight:700;
+    color:var(--clr-text); letter-spacing:-1px;
+}
+.trip-unit {
+    font-family:var(--f-mono); font-size:10px;
+    color:var(--clr-dim); margin-top:2px;
+}
+.trip-btn-row { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
 
 /* ── Trip Panel ── */
 .trip-grid {
@@ -628,6 +663,9 @@ body {
    ══════════════════════════════════════════════════════════════════ */
 #map-area {
     flex:1; min-height:0; position:relative; overflow:hidden;
+    /* Takes all available height inside #panel-maps (which is flex column).
+       #maps-trip-meter sits below it at its natural height. */
+    display:flex; flex-direction:column;
 }
 
 /* Toolbar — floats inside map area */
@@ -696,8 +734,11 @@ body {
 .nav-remain  { font-family:var(--f-mono); font-size:11px; color:var(--clr-dim); }
 
 /* Map container */
-#map-container { position:absolute; inset:0; z-index:1; }
-#map           { width:100%; height:100%; }
+#map-container {
+    position:absolute; inset:0; z-index:1;
+    /* Leave room at top for the toolbar (60px) + nav bar when visible */
+}
+#map { width:100%; height:100%; }
 
 /* ── MapLibre GL JS controls — themed to match the dashboard ─────── */
 .maplibregl-ctrl-group {
@@ -1154,7 +1195,7 @@ body {
     flex-shrink:0; padding:8px 16px;
     background:var(--clr-primary);
     border:none; border-radius:8px;
-    color:#000; font-family:var(--f-display); font-size:11px;
+    color:var(--p-black); font-family:var(--f-display); font-size:11px;
     font-weight:700; letter-spacing:1px; cursor:pointer;
     transition:opacity .15s;
 }

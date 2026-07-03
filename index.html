@@ -511,6 +511,65 @@
       </div><!-- /panel-maps -->
 
 
+      <!-- ─── TRIP PANEL ─── -->
+      <div id="panel-trip" class="content-panel" data-panel="trip">
+        <div class="panel-header">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          TRIP COMPUTER
+        </div>
+        <div class="panel-body" style="padding:14px; gap:10px;">
+
+          <!-- Current session stats -->
+          <div class="trip-grid">
+            <div class="trip-card">
+              <span class="trip-label">TRIP DISTANCE</span>
+              <span class="trip-value" id="trip-distance-detail">0.0</span>
+              <span class="trip-unit">km</span>
+            </div>
+            <div class="trip-card">
+              <span class="trip-label">AVERAGE SPEED</span>
+              <span class="trip-value" id="avg-speed-detail">0</span>
+              <span class="trip-unit">km/h</span>
+            </div>
+            <div class="trip-card">
+              <span class="trip-label">MAX SPEED</span>
+              <span class="trip-value" id="max-speed-detail">0</span>
+              <span class="trip-unit">km/h</span>
+            </div>
+            <div class="trip-card">
+              <span class="trip-label">RIDE TIME</span>
+              <span class="trip-value" id="ride-duration-detail">00:00</span>
+              <span class="trip-unit">h:mm</span>
+            </div>
+            <div class="trip-card full-width">
+              <span class="trip-label">LIFETIME ODO (GPS)</span>
+              <span class="trip-value" id="lifetime-odo-detail">0</span>
+              <span class="trip-unit">km total</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="trip-btn-row">
+            <button id="export-gpx-btn" class="primary-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export GPX
+            </button>
+            <button id="trip-reset-btn-detail" class="secondary-btn danger">Reset Trip</button>
+          </div>
+
+          <p class="info-note">📍 Trip data resets when you tap <strong>Reset Trip</strong>.
+            Lifetime ODO (GPS-derived) never resets — it tracks total distance
+            accumulated across all sessions.</p>
+        </div>
+      </div><!-- /panel-trip -->
+
+
       <!-- ─── PHONE PANEL ─── -->
       <div id="panel-phone" class="content-panel" data-panel="phone">
         <div class="panel-header">
