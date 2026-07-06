@@ -50,6 +50,17 @@ class MapsModule {
 
         try {
             await this.provider.init('map', { theme, time });
+
+        // Immediately resize the canvas to fill its container.
+        // On first load the map panel is already active (display:flex set
+        // by app.js switchPanel('maps')), but the MapLibre canvas still
+        // needs one explicit resize call to measure the correct dimensions.
+        setTimeout(() => this.provider.resize(), 80);
+        setTimeout(() => this.provider.resize(), 400);
+
+        // Hide the "LOADING MAP…" placeholder now that init succeeded
+        const loadingEl = document.getElementById('map-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
         } catch (err) {
             console.error('[Maps] FATAL: provider init failed:', err);
             const mapEl = document.getElementById('map');

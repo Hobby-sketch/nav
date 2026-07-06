@@ -92,12 +92,56 @@ class MediaModule {
         });
 
         this.audio.addEventListener('error', (e) => {
-            const codes = { 1:'ABORTED', 2:'NETWORK', 3:'DECODE', 4:'NOT_SUPPORTED' };
-            const code  = codes[e.target?.error?.code] || 'UNKNOWN';
-            console.error(`[Media] Audio error: ${code}`);
-            Utils.showToast(`Playback error (${code}) — skipping`, 'error');
+            const code = e.target?.error?.code;
+            // Code 4 = NOT_SUPPORTED: browser can't decode this codec.
+            // This is not a fatal error — skip silently to next track.
+            if (code === 4) {
+                const name = this.playlist[this.currentIdx]?.title || 'track';
+                console.warn(`[Media] NOT_SUPPORTED — skipping "${name}" (unsupported codec)`);
+                Utils.showToast(`Format tidak didukung: "${name}" — lanjut ke berikutnya`, 'warning', 3000);
+                setTimeout(() => this._next(), 800);
+                return;
+            }
+            // Other codes (1=ABORTED, 2=NETWORK, 3=DECODE)
+            const labels = { 1:'File dibatalkan', 2:'Gagal memuat (network)', 3:'File rusak (decode error)' };
+            const label  = labels[code] || `Error (${code})`;
+            console.error(`[Media] Audio error ${code}:`, label);
+            Utils.showToast(`${label} — skipping`, 'error', 3000);
             setTimeout(() => this._next(), 1200);
         });
+    }
+
+    // ─────────────────────────────────────────────────────
+    //  CODEC SUPPORT DETECTION
+    //  Checked once at startup, used to filter files at load time
+    //  so NOT_SUPPORTED errors never reach the error handler.
+    // ─────────────────────────────────────────────────────
+    static _supportedFormats() {
+        const a = document.createElement('audio');
+        const can = (t) => a.canPlayType(t) !== '';
+        return {
+            mp3  : can('audio/mpeg'),
+            aac  : can('audio/aac') || can('audio/mp4'),
+            ogg  : can('audio/ogg; codecs="vorbis"'),
+            opus : can('audio/ogg; codecs="opus"'),
+            wav  : can('audio/wav'),
+            flac : can('audio/flac'),
+            m4a  : can('audio/mp4; codecs="mp4a.40.2"'),
+        };
+    }
+
+    _canPlay(file) {
+        const ext  = (file.name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+        const mime = file.type?.toLowerCase();
+        const fmt  = MediaModule._supportedFormats();
+        if (ext === 'mp3'  || mime === 'audio/mpeg') return fmt.mp3;
+        if (ext === 'aac')                           return fmt.aac;
+        if (ext === 'm4a'  || mime === 'audio/mp4')  return fmt.m4a;
+        if (ext === 'ogg'  || mime === 'audio/ogg')  return fmt.ogg || fmt.opus;
+        if (ext === 'opus')                          return fmt.opus;
+        if (ext === 'wav'  || mime === 'audio/wav')  return fmt.wav;
+        if (ext === 'flac' || mime === 'audio/flac') return fmt.flac;
+        return true; // unknown — try anyway, error handler will skip
     }
 
     // ─────────────────────────────────────────────────────
@@ -106,20 +150,26 @@ class MediaModule {
     async _loadFiles(files) {
         if (!files || !files.length) return;
 
-        const audioFiles = Array.from(files).filter(f =>
+        const allAudio = Array.from(files).filter(f =>
             f.type.startsWith('audio/') || /\.(mp3|aac|ogg|wav|flac|m4a|opus)$/i.test(f.name)
         );
 
-        if (!audioFiles.length) {
-            Utils.showToast('No audio files found', 'warning');
+        // Filter out formats the browser definitively cannot play
+        const supported = allAudio.filter(f => this._canPlay(f));
+        const skipped   = allAudio.length - supported.length;
+
+        if (!supported.length) {
+            Utils.showToast('Tidak ada format audio yang didukung browser ini', 'warning');
             return;
         }
+        if (skipped > 0) {
+            Utils.showToast(`${skipped} file dilewati (format tidak didukung)`, 'warning', 4000);
+        }
 
-        Utils.showToast(`Loading ${audioFiles.length} file(s)…`, 'info');
-
+        Utils.showToast(`Loading ${supported.length} file(s)…`, 'info');
         const startIdx = this.playlist.length;
 
-        for (const file of audioFiles) {
+        for (const file of supported) {
             const track = {
                 file,
                 url   : URL.createObjectURL(file),
@@ -161,12 +211,9 @@ class MediaModule {
         this._renderPlaylist();
         this._updateTrackCount();
 
-        // Auto-play first new track if nothing is playing
-        if (this.currentIdx === -1) {
-            this._playIndex(startIdx);
-        }
+        if (this.currentIdx === -1) this._playIndex(startIdx);
 
-        Utils.showToast(`✓ ${audioFiles.length} track(s) loaded`, 'success');
+        Utils.showToast(`✓ ${supported.length} track dimuat`, 'success');
     }
 
     // ─────────────────────────────────────────────────────

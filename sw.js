@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v3-maplibre';
+const CACHE_VERSION = 'v5-splash-gps-media';
 const CACHE_SHELL   = `motodash-shell-${CACHE_VERSION}`;
 const CACHE_API     = `motodash-api-${CACHE_VERSION}`;
 const TTL_API       = 60 * 60 * 1000;   // 1 hour
@@ -86,6 +86,7 @@ const SHELL_URLS = [
     './assets/icons/icon-512.png',
     './assets/icons/icon-192-maskable.png',
     './assets/icons/icon-512-maskable.png',
+    './assets/icons/beat-logo.png',   /* splash screen logo */
 ];
 
 /* ── INSTALL ── */

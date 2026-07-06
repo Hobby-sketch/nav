@@ -40,12 +40,21 @@ class TripComputer {
     //  UI BINDINGS
     // ─────────────────────────────────────────────────────
     _setupUI() {
+        // Maps panel trip meter reset button
         document.getElementById('trip-reset-btn')
             ?.addEventListener('click', () => {
                 if (confirm('Reset semua data trip (jarak, rata-rata, kecepatan maks, durasi)?')) {
                     this.reset();
                 }
             });
+        // Trip panel detailed reset button
+        document.getElementById('trip-reset-btn-detail')
+            ?.addEventListener('click', () => {
+                if (confirm('Reset semua data trip?')) this.reset();
+            });
+        // GPX export
+        document.getElementById('export-gpx-btn')
+            ?.addEventListener('click', () => this.exportGPX());
     }
 
     // ─────────────────────────────────────────────────────
@@ -83,16 +92,18 @@ class TripComputer {
     //  TIMER
     // ─────────────────────────────────────────────────────
     _startTimer() {
-        this._timer = setInterval(() => {
-            this.elapsedSeconds++;
-            Utils.setEl('ride-duration', Utils.formatDuration(this.elapsedSeconds));
+        const tick = () => {
+            const formatted = Utils.formatDuration(this.elapsedSeconds);
+            Utils.setEl('ride-duration', formatted);
+            Utils.setEl('ride-duration-detail', formatted);
             if (this.elapsedSeconds % 30 === 0) {
                 this._saveState();
                 this._saveLifetimeOdo();
             }
-        }, 1000);
-        // Render immediately
-        Utils.setEl('ride-duration', Utils.formatDuration(this.elapsedSeconds));
+            this.elapsedSeconds++;
+        };
+        tick(); // render immediately
+        this._timer = setInterval(tick, 1000);
     }
 
     // ─────────────────────────────────────────────────────
@@ -149,13 +160,18 @@ class TripComputer {
     //  RENDER
     // ─────────────────────────────────────────────────────
     _render() {
+        // Maps panel strip (always visible below map)
         Utils.setEl('trip-distance', `${this.distanceKm.toFixed(1)} km`);
         Utils.setEl('avg-speed',     `${Math.round(this.averageSpeed)} km/h`);
         Utils.setEl('max-speed',     `${Math.round(this.maxSpeed)} km/h`);
 
-        // Shared instrument-cluster readouts (visible behind all 3
-        // themes — see #cluster-info-strip in index.html). No-op if
-        // elements don't exist.
+        // Trip panel detail cards (visible when TRIP tab is active)
+        Utils.setEl('trip-distance-detail', this.distanceKm.toFixed(1));
+        Utils.setEl('avg-speed-detail',     Math.round(this.averageSpeed));
+        Utils.setEl('max-speed-detail',     Math.round(this.maxSpeed));
+        Utils.setEl('lifetime-odo-detail',  this.lifetimeKm.toFixed(0));
+
+        // Shared left-panel cluster readouts
         Utils.setEl('cluster-odo', `${this.lifetimeKm.toFixed(0)} km`);
         Utils.setEl('cluster-avg', `${Math.round(this.averageSpeed)} km/h`);
     }

@@ -4,13 +4,16 @@
   "description": "Premium motorcycle dashboard with GPS speedometer, maps navigation, turn-by-turn routing, Bluetooth, and voice control.",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+
   "orientation": "landscape",
   "theme_color": "#050505",
   "background_color": "#050505",
   "lang": "en",
   "categories": ["navigation", "utilities", "travel"],
+
   "icons": [
     {
       "src": "assets/icons/icon.svg",
@@ -43,7 +46,7 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
+
   "shortcuts": [
     {
       "name": "Open Maps",
@@ -53,5 +56,6 @@
       "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
+
   "prefer_related_applications": false
 }
