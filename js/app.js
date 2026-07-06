@@ -36,7 +36,8 @@ class MotoDash {
         this._setupPWAInstall();
         this._subscribeEvents();
 
-        /* Switch to maps on start */
+        /* Switch to maps on start — using switchPanel so inline styles
+           are applied immediately (not waiting for CSS to load) */
         this.switchPanel('maps');
 
         /* Show the app and hide splash after a short boot sequence */
