@@ -36,8 +36,7 @@ class MotoDash {
         this._setupPWAInstall();
         this._subscribeEvents();
 
-        /* Switch to maps on start — using switchPanel so inline styles
-           are applied immediately (not waiting for CSS to load) */
+        /* Switch to maps on start */
         this.switchPanel('maps');
 
         /* Show the app and hide splash after a short boot sequence */
@@ -47,30 +46,50 @@ class MotoDash {
     }
 
     // ─────────────────────────────────────────────────────
-    //  SPLASH SCREEN
+    //  SPLASH SCREEN — 5-second cinematic boot sequence
     // ─────────────────────────────────────────────────────
     _hideSplash() {
         const splash  = document.getElementById('splash-screen');
         const bar     = document.getElementById('splash-bar-fill');
+        const pct     = document.getElementById('splash-pct');
+        const status  = document.getElementById('splash-status');
         const app     = document.getElementById('app');
 
-        if (!splash) {
-            if (app) app.classList.add('ready');
-            return;
-        }
+        if (!splash) { app?.classList.add('ready'); return; }
 
-        // Start loading bar animation (2s sweep)
-        requestAnimationFrame(() => {
+        // ── Phase 3 @ 3.8s: start the loading bar (matches CSS animation-delay) ──
+        const TOTAL_MS = 4800;  // bar sweeps over 4.2s starting at 0.6s offset = ends at 4.8s
+        setTimeout(() => {
             if (bar) bar.style.width = '100%';
+        }, 300); // trigger early so CSS 4.2s transition ends at ~4.5s
+
+        // ── Percentage counter ──────────────────────────────────────────────────
+        const startPct = Date.now();
+        const tickPct = () => {
+            const elapsed = Date.now() - startPct;
+            const value   = Math.min(100, Math.round((elapsed / TOTAL_MS) * 100));
+            if (pct) pct.textContent = `${value}%`;
+            if (value < 100) requestAnimationFrame(tickPct);
+        };
+        setTimeout(() => requestAnimationFrame(tickPct), 300);
+
+        // ── Status text sequence ────────────────────────────────────────────────
+        const statusMessages = [
+            { t: 3800, text: 'INITIALIZING GPS MODULE…'    },
+            { t: 4100, text: 'LOADING VECTOR MAP ENGINE…'  },
+            { t: 4350, text: 'STARTING MEDIA SERVICES…'    },
+            { t: 4600, text: 'SYSTEM READY ✓'              },
+        ];
+        statusMessages.forEach(({ t, text }) => {
+            setTimeout(() => { if (status) status.textContent = text; }, t);
         });
 
-        // After 2.6s: fade out splash, reveal app
+        // ── Phase 4 @ 5.0s: fade out splash, reveal app ────────────────────────
         setTimeout(() => {
-            if (app)    app.classList.add('ready');
+            app?.classList.add('ready');
             splash.classList.add('hidden');
-            // Remove from DOM after transition completes
-            setTimeout(() => splash.remove(), 750);
-        }, 2600);
+            setTimeout(() => { try { splash.remove(); } catch (_) {} }, 900);
+        }, 5000);
     }
 
     // ─────────────────────────────────────────────────────
