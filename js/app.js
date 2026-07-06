@@ -53,17 +53,14 @@ class MotoDash {
         const bar     = document.getElementById('splash-bar-fill');
         const pct     = document.getElementById('splash-pct');
         const status  = document.getElementById('splash-status');
-        const app     = document.getElementById('app');
 
-        if (!splash) { app?.classList.add('ready'); return; }
+        if (!splash) return;  // app already visible — nothing to do
 
-        // ── Phase 3 @ 3.8s: start the loading bar (matches CSS animation-delay) ──
-        const TOTAL_MS = 4800;  // bar sweeps over 4.2s starting at 0.6s offset = ends at 4.8s
-        setTimeout(() => {
-            if (bar) bar.style.width = '100%';
-        }, 300); // trigger early so CSS 4.2s transition ends at ~4.5s
+        // Trigger the loading bar CSS transition
+        setTimeout(() => { if (bar) bar.style.width = '100%'; }, 300);
 
         // ── Percentage counter ──────────────────────────────────────────────────
+        const TOTAL_MS = 4800;
         const startPct = Date.now();
         const tickPct = () => {
             const elapsed = Date.now() - startPct;
@@ -75,18 +72,19 @@ class MotoDash {
 
         // ── Status text sequence ────────────────────────────────────────────────
         const statusMessages = [
-            { t: 3800, text: 'INITIALIZING GPS MODULE…'    },
-            { t: 4100, text: 'LOADING VECTOR MAP ENGINE…'  },
-            { t: 4350, text: 'STARTING MEDIA SERVICES…'    },
-            { t: 4600, text: 'SYSTEM READY ✓'              },
+            { t: 3800, text: 'INITIALIZING GPS MODULE…'   },
+            { t: 4100, text: 'LOADING VECTOR MAP ENGINE…' },
+            { t: 4350, text: 'STARTING MEDIA SERVICES…'   },
+            { t: 4600, text: 'SYSTEM READY ✓'             },
         ];
         statusMessages.forEach(({ t, text }) => {
             setTimeout(() => { if (status) status.textContent = text; }, t);
         });
 
-        // ── Phase 4 @ 5.0s: fade out splash, reveal app ────────────────────────
+        // ── Fade out splash after 5 seconds ────────────────────────────────────
+        // The app is already fully visible below (no opacity:0 on #app).
+        // We just need to remove the splash overlay.
         setTimeout(() => {
-            app?.classList.add('ready');
             splash.classList.add('hidden');
             setTimeout(() => { try { splash.remove(); } catch (_) {} }, 900);
         }, 5000);

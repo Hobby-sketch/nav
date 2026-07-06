@@ -97,6 +97,34 @@
 <!-- ╔══════════════════════════════════════════════════════════════╗
      ║                        #APP SHELL                           ║
      ╚══════════════════════════════════════════════════════════════╝ -->
+  <div id="splash-screen">
+
+    <!-- Phase 1+2: spotlight expands, logo appears (0.7–1.8s) -->
+    <div class="splash-spotlight"></div>
+    <div class="splash-spotlight-pulse"></div>
+
+    <div class="splash-content">
+      <img src="assets/icons/beat-logo.png" class="splash-logo" alt="BeAT">
+
+      <!-- Phase 3: brand + status + bar appear (3.8–4.8s) -->
+      <div class="splash-brand-strip">
+        <div class="splash-brand-name">MOTO<span class="accent">DASH</span></div>
+        <div class="splash-tagline">Premium Digital Cockpit · BeAT Series</div>
+        <div class="splash-status" id="splash-status">INITIALIZING SYSTEM…</div>
+        <div class="splash-bar-wrap">
+          <div class="splash-bar">
+            <div class="splash-bar-fill" id="splash-bar-fill"></div>
+          </div>
+          <div class="splash-bar-labels">
+            <span class="splash-bar-label">v2.0</span>
+            <span id="splash-pct">0%</span>
+            <span class="splash-bar-label">MOTODASH</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 <div id="app">
 
   <!-- ═══════════════ STATUS BAR ═══════════════ -->
@@ -1144,34 +1172,6 @@
        Logo displayed in NATURAL colors via spotlight technique
        (no CSS invert filter — chrome metallic finish preserved).
   ═════════════════════════════════════════════════════════════════ -->
-  <div id="splash-screen">
-
-    <!-- Phase 1+2: spotlight expands, logo appears (0.7–1.8s) -->
-    <div class="splash-spotlight"></div>
-    <div class="splash-spotlight-pulse"></div>
-
-    <div class="splash-content">
-      <img src="assets/icons/beat-logo.png" class="splash-logo" alt="BeAT">
-
-      <!-- Phase 3: brand + status + bar appear (3.8–4.8s) -->
-      <div class="splash-brand-strip">
-        <div class="splash-brand-name">MOTO<span class="accent">DASH</span></div>
-        <div class="splash-tagline">Premium Digital Cockpit · BeAT Series</div>
-        <div class="splash-status" id="splash-status">INITIALIZING SYSTEM…</div>
-        <div class="splash-bar-wrap">
-          <div class="splash-bar">
-            <div class="splash-bar-fill" id="splash-bar-fill"></div>
-          </div>
-          <div class="splash-bar-labels">
-            <span class="splash-bar-label">v2.0</span>
-            <span id="splash-pct">0%</span>
-            <span class="splash-bar-label">MOTODASH</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
 
   <!-- Toast notification -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>

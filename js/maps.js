@@ -36,12 +36,29 @@ class MapsModule {
     async _init() {
         const cfg = window.MotoDashConfig.map;
 
-        // Provider selection — today only 'maplibre' ships, but this
-        // is the one line that would change to add a second engine.
+        // Safety timeout — always hide the loading spinner after 12s
+        // regardless of what happens, so the user is never stuck forever.
+        const loadingEl = document.getElementById('map-loading');
+        const _forceHideLoading = () => {
+            if (loadingEl) loadingEl.style.display = 'none';
+        };
+        const _safetyTimer = setTimeout(_forceHideLoading, 12000);
+
+        // Vendor check — clear error if MapLibre or PMTiles not uploaded
+        if (typeof maplibregl === 'undefined' || typeof pmtiles === 'undefined') {
+            clearTimeout(_safetyTimer);
+            _forceHideLoading();
+            const missing = typeof maplibregl === 'undefined' ? 'maplibre-gl.js' : 'pmtiles.js';
+            this._showMapError(`File vendor tidak ditemukan: <code>vendor/${
+                typeof maplibregl === 'undefined' ? 'maplibre' : 'pmtiles'
+            }/${missing}</code><br>Pastikan folder <code>vendor/</code> ter-upload ke GitHub.`);
+            return;
+        }
+
         this.provider = cfg.provider === 'maplibre' ? new MapLibreProvider() : null;
         if (!this.provider) {
-            console.error(`[Maps] FATAL: unknown map provider "${cfg.provider}"`);
-            Utils.showToast('Peta gagal dimuat — provider tidak dikenal', 'error', 6000);
+            clearTimeout(_safetyTimer); _forceHideLoading();
+            Utils.showToast('Map provider tidak dikenal', 'error', 6000);
             return;
         }
 
@@ -51,47 +68,71 @@ class MapsModule {
         try {
             await this.provider.init('map', { theme, time });
 
-        // Immediately resize the canvas to fill its container.
-        // On first load the map panel is already active (display:flex set
-        // by app.js switchPanel('maps')), but the MapLibre canvas still
-        // needs one explicit resize call to measure the correct dimensions.
-        setTimeout(() => this.provider.resize(), 80);
-        setTimeout(() => this.provider.resize(), 400);
+            // Success — hide loading, resize canvas
+            clearTimeout(_safetyTimer);
+            _forceHideLoading();
+            setTimeout(() => this.provider.resize(), 80);
+            setTimeout(() => this.provider.resize(), 400);
 
-        // Hide the "LOADING MAP…" placeholder now that init succeeded
-        const loadingEl = document.getElementById('map-loading');
-        if (loadingEl) loadingEl.style.display = 'none';
         } catch (err) {
-            console.error('[Maps] FATAL: provider init failed:', err);
-            const mapEl = document.getElementById('map');
-            if (mapEl) {
-                mapEl.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;
-                                justify-content:center;height:100%;padding:24px;
-                                text-align:center;color:#FF4444;font-family:sans-serif;">
-                        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
-                        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">
-                            Peta gagal dimuat
-                        </div>
-                        <div style="font-size:13px;color:#7A9BB5;max-width:320px;line-height:1.6;">
-                            Engine peta (MapLibre GL JS) gagal diinisialisasi. Cek folder
-                            <code>vendor/</code> ter-upload, dan Console (F12) untuk detail.
-                        </div>
-                    </div>`;
+            clearTimeout(_safetyTimer);
+            _forceHideLoading();
+            console.error('[Maps] Provider init failed:', err);
+
+            // Diagnose the error to give a specific, actionable message
+            const errStr = String(err?.message || err);
+            let detail = 'Engine peta gagal diinisialisasi.';
+            if (errStr.includes('Style not found') || errStr.includes('404')) {
+                detail = 'File style peta tidak ditemukan.<br>Pastikan folder <code>js/map-styles/</code> ter-upload ke GitHub (10 file .json).';
+            } else if (errStr.includes('Worker') || errStr.includes('worker')) {
+                detail = 'File worker tidak ditemukan: <code>vendor/maplibre/maplibre-gl-csp-worker.js</code>';
+            } else if (errStr.includes('WebGL') || errStr.includes('webgl')) {
+                detail = 'Browser tidak mendukung WebGL. Coba buka di Chrome/Firefox terbaru.';
+            } else if (errStr.includes('network') || errStr.includes('fetch')) {
+                detail = 'Gagal memuat sumber data peta. Periksa koneksi internet.';
             }
-            Utils.showToast('Peta gagal dimuat — cek Console', 'error', 6000);
+
+            this._showMapError(detail);
+            Utils.showToast('Peta gagal dimuat — lihat panel Maps', 'error', 6000);
             return;
         }
 
-        // Stop auto-follow when the rider drags the map
         this.provider.on('userdrag', () => { this.isFollowing = false; });
-
         this._setupSearch();
         this._setupToolbarButtons();
         this._subscribeGPS();
         this._subscribeEvents();
 
         console.log('[Maps] Initialized ✓ (provider: maplibre)');
+    }
+
+    _showMapError(detail) {
+        const container = document.getElementById('map-container');
+        if (!container) return;
+        container.innerHTML = `
+            <div style="
+                display:flex;flex-direction:column;align-items:center;
+                justify-content:center;height:100%;padding:28px 20px;
+                text-align:center;background:#050505;
+                font-family:Rajdhani,sans-serif;gap:12px;">
+                <div style="font-size:36px">🗺️</div>
+                <div style="font-size:15px;font-weight:700;color:#FF5555;
+                    font-family:Orbitron,sans-serif;letter-spacing:2px;">
+                    PETA GAGAL DIMUAT
+                </div>
+                <div style="font-size:13px;color:#7A9BB5;max-width:340px;
+                    line-height:1.7;">${detail}</div>
+                <div style="font-size:11px;color:#3a5060;margin-top:8px;">
+                    Buka Console browser (F12) untuk detail error teknis.
+                </div>
+                <button onclick="location.reload()"
+                    style="margin-top:10px;padding:10px 22px;
+                    background:#3DDBC4;border:none;border-radius:6px;
+                    color:#000;font-family:Orbitron,sans-serif;
+                    font-size:11px;letter-spacing:2px;cursor:pointer;">
+                    COBA ULANG
+                </button>
+            </div>`;
     }
 
     /** Called by app.js whenever the map container becomes visible/resized. */
@@ -402,36 +443,10 @@ class MapsModule {
 
 /* ── Bootstrap ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    /* Small delay — ensures the map <div> is painted */
+    // Small delay ensures the map <div> is painted.
+    // Vendor check (maplibregl/pmtiles) is handled inside MapsModule._init()
+    // with specific error messages, so no need for a duplicate check here.
     setTimeout(() => {
-        /*
-         * DEFENSIVE CHECK: if MapLibre GL JS or pmtiles failed to load
-         * (vendor/ folder not deployed, network issue), show a clear
-         * visible error instead of silently failing with a blank map.
-         */
-        if (typeof maplibregl === 'undefined' || typeof pmtiles === 'undefined') {
-            const mapEl = document.getElementById('map');
-            if (mapEl) {
-                mapEl.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;
-                                justify-content:center;height:100%;padding:24px;
-                                text-align:center;color:#FF4444;font-family:sans-serif;">
-                        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
-                        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">
-                            Peta gagal dimuat
-                        </div>
-                        <div style="font-size:13px;color:#7A9BB5;max-width:320px;line-height:1.6;">
-                            File vendor/maplibre/maplibre-gl.js atau vendor/pmtiles/pmtiles.js
-                            tidak berhasil dimuat. Pastikan folder <code>vendor/</code> ikut
-                            ter-upload ke GitHub. Cek juga Console (F12) untuk detail error.
-                        </div>
-                    </div>`;
-            }
-            console.error('[Maps] FATAL: maplibregl or pmtiles is not defined — vendor/ failed to load.');
-            Utils.showToast?.('Peta gagal dimuat — cek folder vendor/', 'error', 6000);
-            return;
-        }
-
         window.mapsModule = new MapsModule();
         console.log('[Maps] Ready ✓');
     }, 150);
