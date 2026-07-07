@@ -99,27 +99,73 @@
      ╚══════════════════════════════════════════════════════════════╝ -->
   <div id="splash-screen">
 
-    <!-- Phase 1+2: spotlight expands, logo appears (0.7–1.8s) -->
-    <div class="splash-spotlight"></div>
-    <div class="splash-spotlight-pulse"></div>
+    <!-- ═══════════ LAYER 1: Corner frame lines (draw in from corners) ═══════════ -->
+    <div class="sp-frame">
+      <div class="sp-corner sp-tl"></div>
+      <div class="sp-corner sp-tr"></div>
+      <div class="sp-corner sp-bl"></div>
+      <div class="sp-corner sp-br"></div>
+    </div>
 
-    <div class="splash-content">
-      <img src="assets/icons/beat-logo.png" class="splash-logo" alt="BeAT">
+    <!-- ═══════════ LAYER 2: Horizontal scan line (power-on effect) ═════════════ -->
+    <div class="sp-scanline"></div>
 
-      <!-- Phase 3: brand + status + bar appear (3.8–4.8s) -->
-      <div class="splash-brand-strip">
-        <div class="splash-brand-name">MOTO<span class="accent">DASH</span></div>
-        <div class="splash-tagline">Premium Digital Cockpit · BeAT Series</div>
-        <div class="splash-status" id="splash-status">INITIALIZING SYSTEM…</div>
-        <div class="splash-bar-wrap">
-          <div class="splash-bar">
-            <div class="splash-bar-fill" id="splash-bar-fill"></div>
-          </div>
-          <div class="splash-bar-labels">
-            <span class="splash-bar-label">v2.0</span>
-            <span id="splash-pct">0%</span>
-            <span class="splash-bar-label">MOTODASH</span>
-          </div>
+    <!-- ═══════════ LAYER 3: Central emblem ═════════════════════════════════════ -->
+    <div class="sp-center">
+
+      <div class="sp-emblem-wrap">
+        <!-- Rotating ring segments (outer) -->
+        <svg class="sp-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <!-- Static dim track -->
+          <circle cx="110" cy="110" r="104" fill="none"
+                  stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+          <!-- Animated arc — draws around the emblem -->
+          <circle class="sp-ring-arc" cx="110" cy="110" r="104" fill="none"
+                  stroke-width="1.2" stroke-linecap="round"
+                  transform="rotate(-90 110 110)"/>
+          <!-- Inner thin ring -->
+          <circle cx="110" cy="110" r="92" fill="none"
+                  stroke="rgba(61,219,196,0.12)" stroke-width="0.8"/>
+        </svg>
+
+        <!-- Emblem disc — white/cream badge that holds the logo -->
+        <div class="sp-emblem-disc">
+          <img src="assets/icons/beat-logo.png" class="sp-logo" alt="BeAT">
+        </div>
+      </div>
+
+      <!-- Brand identity (appears after emblem settles) -->
+      <div class="sp-identity">
+        <div class="sp-rule-wrap">
+          <div class="sp-rule"></div>
+          <div class="sp-brand-name">MOTO<span>DASH</span></div>
+          <div class="sp-rule"></div>
+        </div>
+        <div class="sp-model-line">BeAT Series &nbsp;·&nbsp; Premium Digital Cockpit</div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════ LAYER 4: Bottom status strip ══════════════════════════════ -->
+    <div class="sp-footer">
+      <div class="sp-syscheck">
+        <div class="sp-sys-item" id="sys-gps">
+          <span class="sys-dot"></span><span class="sys-label">GPS ENGINE</span>
+        </div>
+        <div class="sp-sys-item" id="sys-map">
+          <span class="sys-dot"></span><span class="sys-label">MAP ENGINE</span>
+        </div>
+        <div class="sp-sys-item" id="sys-media">
+          <span class="sys-dot"></span><span class="sys-label">MEDIA STACK</span>
+        </div>
+      </div>
+      <div class="sp-prog-wrap">
+        <div class="sp-prog-bar">
+          <div class="sp-prog-fill" id="splash-bar-fill"></div>
+        </div>
+        <div class="sp-prog-meta">
+          <span id="splash-status">STARTING UP</span>
+          <span id="splash-pct">0 %</span>
         </div>
       </div>
     </div>

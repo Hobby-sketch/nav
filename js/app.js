@@ -46,49 +46,57 @@ class MotoDash {
     }
 
     // ─────────────────────────────────────────────────────
-    //  SPLASH SCREEN — 5-second cinematic boot sequence
+    // ─────────────────────────────────────────────────────
+    //  SPLASH — Premium 5-second OEM boot sequence
     // ─────────────────────────────────────────────────────
     _hideSplash() {
-        const splash  = document.getElementById('splash-screen');
-        const bar     = document.getElementById('splash-bar-fill');
-        const pct     = document.getElementById('splash-pct');
-        const status  = document.getElementById('splash-status');
+        const splash = document.getElementById('splash-screen');
+        const bar    = document.getElementById('splash-bar-fill');
+        const pct    = document.getElementById('splash-pct');
+        const status = document.getElementById('splash-status');
 
-        if (!splash) return;  // app already visible — nothing to do
+        if (!splash) return;
 
-        // Trigger the loading bar CSS transition
+        // Progress bar — CSS transition 4.2s, triggered early so it
+        // finishes just before the 5-second fade-out
         setTimeout(() => { if (bar) bar.style.width = '100%'; }, 300);
 
-        // ── Percentage counter ──────────────────────────────────────────────────
-        const TOTAL_MS = 4800;
-        const startPct = Date.now();
-        const tickPct = () => {
-            const elapsed = Date.now() - startPct;
-            const value   = Math.min(100, Math.round((elapsed / TOTAL_MS) * 100));
-            if (pct) pct.textContent = `${value}%`;
-            if (value < 100) requestAnimationFrame(tickPct);
+        // Percentage counter
+        const TOTAL = 4800;
+        const t0    = Date.now();
+        const tick  = () => {
+            const v = Math.min(100, Math.round((Date.now() - t0) / TOTAL * 100));
+            if (pct)    pct.textContent = `${v} %`;
+            if (v < 100) requestAnimationFrame(tick);
         };
-        setTimeout(() => requestAnimationFrame(tickPct), 300);
+        setTimeout(() => requestAnimationFrame(tick), 300);
 
-        // ── Status text sequence ────────────────────────────────────────────────
-        const statusMessages = [
-            { t: 3800, text: 'INITIALIZING GPS MODULE…'   },
-            { t: 4100, text: 'LOADING VECTOR MAP ENGINE…' },
-            { t: 4350, text: 'STARTING MEDIA SERVICES…'   },
-            { t: 4600, text: 'SYSTEM READY ✓'             },
-        ];
-        statusMessages.forEach(({ t, text }) => {
-            setTimeout(() => { if (status) status.textContent = text; }, t);
-        });
+        // Status text sequence
+        [
+            { t: 3100, text: 'INITIALIZING GPS…'   },
+            { t: 3600, text: 'LOADING MAP ENGINE…' },
+            { t: 4100, text: 'STARTING SERVICES…'  },
+            { t: 4650, text: 'SYSTEM READY'         },
+        ].forEach(({ t, text }) =>
+            setTimeout(() => { if (status) status.textContent = text; }, t)
+        );
 
-        // ── Fade out splash after 5 seconds ────────────────────────────────────
-        // The app is already fully visible below (no opacity:0 on #app).
-        // We just need to remove the splash overlay.
+        // System-check dots (sequential green tick-on)
+        [
+            { id: 'sys-gps',   t: 3200 },
+            { id: 'sys-map',   t: 3700 },
+            { id: 'sys-media', t: 4200 },
+        ].forEach(({ id, t }) =>
+            setTimeout(() => document.getElementById(id)?.classList.add('ok'), t)
+        );
+
+        // Fade out at 5 s — splash removed, app already visible underneath
         setTimeout(() => {
             splash.classList.add('hidden');
-            setTimeout(() => { try { splash.remove(); } catch (_) {} }, 900);
+            setTimeout(() => { try { splash.remove(); } catch (_) {} }, 950);
         }, 5000);
     }
+
 
     // ─────────────────────────────────────────────────────
     //  DOCK & PANEL SWITCHING

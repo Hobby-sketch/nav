@@ -1176,251 +1176,222 @@ body {
 .dock-btn:active::after { opacity:.08; }
 
 /* ══════════════════════════════════════════════════════════════════
-   SPLASH / BOOT SCREEN  — 5-second cinematic OEM sequence
+   SPLASH / BOOT SCREEN — Premium OEM 5-second cinematic sequence
    ══════════════════════════════════════════════════════════════════
-   WHY NO filter:invert — The BeAT logo has metallic chrome 3-D
-   finish that looks wrong when inverted. Instead we use a white
-   "spotlight" radial gradient behind the logo so it renders in its
-   NATURAL colors (black + chrome on white background) while the
-   edges fade seamlessly into the surrounding dark field.
+   Design language: Honda Gold Wing / BMW R1250GS TFT boot style.
+   ─ Pure black field with deep vignette (OEM instrument cluster on)
+   ─ Circular chrome emblem disc (logo in natural colors, no invert)
+   ─ SVG ring arc that draws around the emblem (progress metaphor)
+   ─ Corner bracket frame lines animate in from corners
+   ─ Brand name / model line / system-check strip / progress bar
    ══════════════════════════════════════════════════════════════════ */
 
-/* ── Phase timing (controlled via JS _hideSplash) ───────────────
-   0.0 – 0.8 s  : pure black silence  (controlled by animation-delay)
-   0.8 – 1.8 s  : spotlight expands, logo fades in
-   1.8 – 3.8 s  : hold — subtle heartbeat glow
-   3.8 – 4.6 s  : brand text + status line reveal
-   4.6 – 5.0 s  : loading bar sweeps to 100%
-   5.0 – 5.8 s  : fade-out (JS adds .hidden class)
-   ─────────────────────────────────────────────────────────────── */
-
 #splash-screen {
-    position:fixed; inset:0; z-index:var(--z-startup);
-    background:#000000;
+    position:fixed; inset:0;
+    z-index:10000;
+    background:#000;
     display:flex; flex-direction:column;
     align-items:center; justify-content:center;
     overflow:hidden;
-    transition:opacity .8s ease, visibility .8s ease;
+    transition:opacity .9s ease;
 }
-#splash-screen.hidden {
-    opacity:0; visibility:hidden; pointer-events:none;
+#splash-screen.hidden { opacity:0; pointer-events:none; }
+
+/* ── Power-on scanline ─────────────────────────────────────────── */
+.sp-scanline {
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,
+        transparent 0%, rgba(61,219,196,.6) 45%,
+        rgba(255,255,255,.4) 50%,
+        rgba(61,219,196,.6) 55%, transparent 100%);
+    animation:sp-scan .7s cubic-bezier(.4,0,.6,1) forwards;
+    animation-delay:.05s; opacity:0;
+}
+@keyframes sp-scan {
+    0%   { top:0%;   opacity:1; }
+    90%  { opacity:.6; }
+    100% { top:100%; opacity:0; }
 }
 
-/* ── Scan-line texture (CRT / TFT power-on feel) ──────────────── */
-#splash-screen::before {
-    content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
-    background:repeating-linear-gradient(
-        0deg,
-        rgba(0,0,0,.18) 0px, rgba(0,0,0,.18) 1px,
-        transparent 1px, transparent 3px
-    );
-    animation:splash-scanlines 5s linear;
+/* ── Corner frame brackets ─────────────────────────────────────── */
+.sp-frame { position:absolute; inset:clamp(14px,3vw,28px); pointer-events:none; }
+.sp-corner {
+    position:absolute; width:0; height:0;
+    border-color:rgba(61,219,196,.45);
+    border-style:solid;
+    animation:sp-corner-in .55s cubic-bezier(.2,.8,.3,1) forwards;
+    animation-delay:.5s; opacity:0;
 }
+@keyframes sp-corner-in {
+    from { width:0; height:0; opacity:0; }
+    to   { width:clamp(20px,4vw,36px); height:clamp(20px,4vw,36px); opacity:1; }
+}
+.sp-tl { top:0; left:0; border-width:1.5px 0 0 1.5px; }
+.sp-tr { top:0; right:0; border-width:1.5px 1.5px 0 0; }
+.sp-bl { bottom:0; left:0; border-width:0 0 1.5px 1.5px; }
+.sp-br { bottom:0; right:0; border-width:0 1.5px 1.5px 0; }
 
-/* ── Vignette frame (cinematic letterbox feel) ─────────────────── */
-#splash-screen::after {
-    content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
-    box-shadow:inset 0 0 120px rgba(0,0,0,.85);
-}
-
-/* ── Spotlight — white radial glow BEHIND the logo ──────────────
-   Allows the logo to show in its original colors (black chrome on
-   white background) while blending naturally into the dark field.  */
-.splash-spotlight {
-    position:absolute; z-index:1;
-    width:clamp(320px, 55vw, 600px);
-    aspect-ratio:1.6/1;
-    background:radial-gradient(ellipse 80% 75% at 50% 50%,
-        rgba(255,255,255,.78)  0%,
-        rgba(255,255,255,.55) 25%,
-        rgba(255,255,255,.22) 50%,
-        rgba(255,255,255,.04) 70%,
-        rgba(0,0,0,0)         85%);
-    border-radius:50%;
-    transform:scale(0);
-    animation:splash-spotlight-expand .9s cubic-bezier(.2,.8,.3,1) forwards;
-    animation-delay:.7s;
-}
-@keyframes splash-spotlight-expand {
-    0%   { transform:scale(0);   opacity:0; }
-    60%  { transform:scale(1.08);opacity:1; }
-    100% { transform:scale(1);   opacity:1; }
-}
-
-/* Ambient heartbeat pulse (continuous after expand) */
-.splash-spotlight-pulse {
-    position:absolute; z-index:1;
-    width:clamp(360px, 62vw, 680px);
-    aspect-ratio:1.6/1;
-    background:radial-gradient(ellipse 60% 55% at 50% 50%,
-        rgba(255,255,255,.10) 0%,
-        rgba(0,0,0,0) 70%);
-    border-radius:50%;
-    opacity:0;
-    animation:splash-heartbeat 2.2s ease-in-out infinite;
-    animation-delay:1.6s;
-}
-@keyframes splash-heartbeat {
-    0%,100%{opacity:0;  transform:scale(.95);}
-    40%    {opacity:.8; transform:scale(1.02);}
-    60%    {opacity:.5; transform:scale(1);}
-}
-
-/* ── Logo ──────────────────────────────────────────────────────── */
-.splash-logo {
-    position:relative; z-index:2;
-    width:clamp(220px, 42vw, 440px);
-    height:auto;
-    /* NO filter:invert — natural chrome/metallic finish preserved */
-    /* Soft drop-shadow to blend logo base into spotlight */
-    filter:drop-shadow(0 8px 32px rgba(0,0,0,.55));
-    opacity:0;
-    animation:splash-logo-appear 1s cubic-bezier(.2,.8,.3,1) forwards;
-    animation-delay:1s;
-}
-@keyframes splash-logo-appear {
-    from { opacity:0; transform:scale(.82) translateY(18px); }
-    to   { opacity:1; transform:scale(1)   translateY(0);   }
-}
-
-/* ── Content wrapper ───────────────────────────────────────────── */
-.splash-content {
-    position:relative; z-index:3;
+/* ── Centre layout ─────────────────────────────────────────────── */
+.sp-center {
     display:flex; flex-direction:column;
-    align-items:center;
-    gap:0;
+    align-items:center; gap:clamp(18px,3vw,30px);
+    flex:1; justify-content:center;
 }
 
-/* ── Brand strip (appears after logo settles) ──────────────────── */
-.splash-brand-strip {
-    display:flex; flex-direction:column; align-items:center;
-    gap:8px; margin-top:28px;
-    opacity:0;
-    animation:splash-rise .65s ease forwards;
-    animation-delay:3.8s;
+/* ── Emblem ────────────────────────────────────────────────────── */
+.sp-emblem-wrap {
+    position:relative;
+    width:clamp(160px,34vw,260px);
+    height:clamp(160px,34vw,260px);
+    display:flex; align-items:center; justify-content:center;
+    animation:sp-emblem-in .9s cubic-bezier(.2,.8,.3,1) forwards;
+    animation-delay:.6s; opacity:0;
 }
-@keyframes splash-rise {
-    from { opacity:0; transform:translateY(14px); }
-    to   { opacity:1; transform:translateY(0);    }
+@keyframes sp-emblem-in {
+    from { opacity:0; transform:scale(.78); }
+    to   { opacity:1; transform:scale(1); }
 }
 
-.splash-brand-name {
+/* SVG ring sits absolutely over the disc */
+.sp-ring-svg {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    overflow:visible;
+}
+
+/* The arc that draws around the emblem (stroke-dasharray animation) */
+.sp-ring-arc {
+    stroke:rgba(61,219,196,.75);
+    stroke-dasharray:0 654;   /* 654 ≈ 2π×104 */
+    stroke-dashoffset:0;
+    animation:sp-arc-draw 2.2s cubic-bezier(.4,0,.2,1) forwards;
+    animation-delay:1s;
+    filter:drop-shadow(0 0 4px rgba(61,219,196,.8));
+}
+@keyframes sp-arc-draw {
+    from { stroke-dasharray:0 654; }
+    to   { stroke-dasharray:654 0; }
+}
+
+/* Emblem disc — white badge that shows logo in natural colors */
+.sp-emblem-disc {
+    position:relative; z-index:1;
+    width:76%; height:76%;
+    border-radius:50%;
+    /* Radial gradient: bright white centre fades to dark edge  */
+    background:radial-gradient(ellipse 90% 85% at 50% 48%,
+        #ffffff 0%, #f2f2f2 45%, #c8c8c8 70%, #505050 88%, #101010 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.12),
+        0 0 32px rgba(255,255,255,.06),
+        inset 0 2px 8px rgba(255,255,255,.35),
+        inset 0 -2px 8px rgba(0,0,0,.4);
+    overflow:hidden;
+}
+
+.sp-logo {
+    width:82%; height:82%;
+    object-fit:contain;
+    /* No filter — logo shown in exact natural colors inside white disc */
+    display:block;
+    position:relative; z-index:1;
+}
+
+/* ── Brand identity ─────────────────────────────────────────────── */
+.sp-identity {
+    display:flex; flex-direction:column;
+    align-items:center; gap:8px;
+    animation:sp-rise .6s ease forwards;
+    animation-delay:2.4s; opacity:0;
+}
+@keyframes sp-rise {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+
+.sp-rule-wrap {
+    display:flex; align-items:center; gap:clamp(10px,2vw,18px);
+}
+.sp-rule {
+    height:1px; width:clamp(36px,8vw,80px);
+    background:linear-gradient(90deg,transparent,rgba(61,219,196,.6));
+}
+.sp-rule + .sp-brand-name + .sp-rule {
+    background:linear-gradient(270deg,transparent,rgba(61,219,196,.6));
+}
+
+.sp-brand-name {
     font-family:'Orbitron',sans-serif;
-    font-size:clamp(20px, 3.8vw, 36px);
-    font-weight:900; letter-spacing:10px;
-    color:#fff;
-    text-shadow:0 0 28px rgba(61,219,196,.5);
+    font-size:clamp(16px,3.2vw,28px);
+    font-weight:900; letter-spacing:clamp(6px,1.5vw,14px);
+    color:rgba(255,255,255,.92);
+    text-shadow:0 0 22px rgba(61,219,196,.35);
+    white-space:nowrap;
 }
-.splash-brand-name .accent { color:#3DDBC4; }
+.sp-brand-name span { color:#3DDBC4; }
 
-.splash-tagline {
+.sp-model-line {
     font-family:'Rajdhani',sans-serif;
-    font-size:clamp(10px, 1.6vw, 13px);
-    letter-spacing:6px; color:rgba(255,255,255,.42);
-    text-transform:uppercase;
+    font-size:clamp(9px,1.5vw,12px);
+    letter-spacing:clamp(3px,1vw,6px);
+    color:rgba(255,255,255,.32);
+    text-transform:uppercase; white-space:nowrap;
 }
 
-/* ── Boot status line (mono, simulates system init) ────────────── */
-.splash-status {
+/* ── Footer strip ───────────────────────────────────────────────── */
+.sp-footer {
+    width:100%; max-width:clamp(280px,55vw,540px);
+    padding:0 clamp(16px,3vw,32px) clamp(18px,3vh,32px);
+    display:flex; flex-direction:column; gap:10px;
+    animation:sp-rise .5s ease forwards;
+    animation-delay:3s; opacity:0;
+}
+
+/* System-check row */
+.sp-syscheck {
+    display:flex; justify-content:center; gap:clamp(12px,3vw,28px);
+}
+.sp-sys-item {
+    display:flex; align-items:center; gap:6px;
     font-family:'Share Tech Mono',monospace;
-    font-size:clamp(9px, 1.2vw, 11px);
-    color:#3DDBC4; letter-spacing:1.5px;
-    margin-top:6px;
-    opacity:0;
-    animation:splash-rise .5s ease forwards;
-    animation-delay:4.1s;
+    font-size:clamp(8px,1.1vw,10px);
+    letter-spacing:1.5px; color:rgba(255,255,255,.28);
+    transition:color .3s ease;
+}
+.sp-sys-item.ok { color:rgba(61,219,196,.75); }
+
+.sys-dot {
+    width:5px; height:5px; border-radius:50%;
+    background:rgba(255,255,255,.18);
+    transition:all .3s ease;
+}
+.sp-sys-item.ok .sys-dot {
+    background:#3DDBC4;
+    box-shadow:0 0 6px rgba(61,219,196,.9);
 }
 
-/* ── Loading bar ───────────────────────────────────────────────── */
-.splash-bar-wrap {
-    width:clamp(200px, 36vw, 360px); margin-top:14px;
-    opacity:0;
-    animation:splash-rise .5s ease forwards;
-    animation-delay:4.3s;
+/* Progress bar */
+.sp-prog-wrap { display:flex; flex-direction:column; gap:5px; }
+.sp-prog-bar {
+    height:2px; background:rgba(255,255,255,.07); border-radius:1px; overflow:hidden;
 }
-.splash-bar {
-    height:2px; background:rgba(255,255,255,.10); border-radius:1px; overflow:hidden;
-}
-.splash-bar-fill {
+.sp-prog-fill {
     height:100%; width:0; border-radius:1px;
-    background:linear-gradient(90deg,#3DDBC4,#7ffff4);
-    box-shadow:0 0 10px rgba(61,219,196,.7);
-    transition:width 4.2s cubic-bezier(.4,0,.2,1);
+    background:linear-gradient(90deg,#3DDBC4,#a0f4ea);
+    box-shadow:0 0 8px rgba(61,219,196,.7);
+    transition:width 4.2s cubic-bezier(.4,0,.15,1);
 }
-.splash-bar-labels {
-    display:flex; justify-content:space-between; margin-top:5px;
-}
-.splash-bar-label {
+.sp-prog-meta {
+    display:flex; justify-content:space-between;
     font-family:'Share Tech Mono',monospace;
-    font-size:9px; color:rgba(255,255,255,.25); letter-spacing:1px;
+    font-size:clamp(8px,1vw,10px); letter-spacing:1.5px;
 }
-#splash-pct {
-    font-family:'Share Tech Mono',monospace;
-    font-size:9px; color:rgba(61,219,196,.6); letter-spacing:1px;
-}
+#splash-status { color:rgba(255,255,255,.3); }
+#splash-pct    { color:rgba(61,219,196,.5); }
 
-/* ── App reveal ────────────────────────────────────────────────── */
-/* NOTE: #app never gets opacity:0 — the splash screen (position:fixed,
-   z-index:10000, now a direct body child) covers it naturally.
-   No opacity animation needed; app is always fully rendered below. */
-#pwa-install-banner {
-    position:fixed; bottom:calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 8px);
-    left:12px; right:12px; z-index:8000;
-    display:flex; align-items:center; gap:12px;
-    padding:12px 14px;
-    background:rgba(4,12,22,.97);
-    border:1px solid var(--clr-primary);
-    border-radius:12px;
-    box-shadow:var(--brand-glow-primary), var(--elevation-4);
-    backdrop-filter:blur(18px);
-    animation:banner-slide-up .35s var(--ease-decel) both;
-}
-@keyframes banner-slide-up {
-    from { transform:translateY(20px); opacity:0; }
-    to   { transform:translateY(0);    opacity:1; }
-}
-.pwa-banner-icon img { border-radius:10px; flex-shrink:0; }
-.pwa-banner-text {
-    flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;
-}
-.pwa-banner-text strong {
-    font-family:var(--f-display); font-size:13px; font-weight:700;
-    color:var(--clr-text); letter-spacing:.5px;
-}
-.pwa-banner-text span {
-    font-size:11px; color:var(--clr-dim); line-height:1.4;
-}
-.pwa-btn-install {
-    flex-shrink:0; padding:8px 16px;
-    background:var(--clr-primary);
-    border:none; border-radius:8px;
-    color:var(--p-black); font-family:var(--f-display); font-size:11px;
-    font-weight:700; letter-spacing:1px; cursor:pointer;
-    transition:opacity .15s;
-}
-.pwa-btn-install:hover { opacity:.85; }
-.pwa-btn-dismiss {
-    flex-shrink:0; padding:8px 10px;
-    background:transparent; border:1px solid var(--surf-5);
-    border-radius:8px; color:var(--clr-muted);
-    font-size:11px; cursor:pointer; letter-spacing:.5px;
-    transition:all .15s;
-}
-.pwa-btn-dismiss:hover { border-color:var(--clr-dim); color:var(--clr-dim); }
-.toast {
-    position:fixed; bottom:calc(var(--dock-h) + 10px); left:50%;
-    transform:translateX(-50%) translateY(12px); z-index:9999;
-    padding:9px 20px; border-radius:20px; font-size:12px;
-    background:rgba(5,12,20,.96); border:1px solid var(--border);
-    color:var(--clr-text); opacity:0; pointer-events:none;
-    backdrop-filter:blur(14px); white-space:nowrap;
-    transition:opacity .25s, transform .25s var(--ease);
-}
-.toast.show          { opacity:1; transform:translateX(-50%) translateY(0); }
-.toast.toast-success { border-color:var(--clr-secondary); color:var(--clr-secondary); }
-.toast.toast-warning { border-color:var(--clr-warning);   color:var(--clr-warning);   }
-.toast.toast-error   { border-color:var(--clr-danger);    color:var(--clr-danger);    }
-.toast.toast-info    { border-color:var(--clr-primary);   color:var(--clr-primary);   }
+/* ── App reveal (opacity comes from removing splash, not hiding app) ── */
+/* NOTE: #app is always visible — splash covers it as position:fixed  */
 
 /* ══════════════════════════════════════════════════════════════════
    PWA SAFE-AREA — notch / status-bar top inset

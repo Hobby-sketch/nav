@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v5-splash-gps-media';
+const CACHE_VERSION = 'v6-premium-boot';
 const CACHE_SHELL   = `motodash-shell-${CACHE_VERSION}`;
 const CACHE_API     = `motodash-api-${CACHE_VERSION}`;
 const TTL_API       = 60 * 60 * 1000;   // 1 hour
