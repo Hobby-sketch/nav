@@ -200,16 +200,30 @@ class SpeedometerModule {
     // ─────────────────────────────────────────────────────
     //  GPS  (unchanged — core telemetry logic)
     // ─────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────
+    //  GPS
+    // ─────────────────────────────────────────────────────
     _startGPS() {
+        // navigator.geolocation is undefined in two cases:
+        // (a) truly unsupported browser
+        // (b) page served over HTTP (Chrome blocks geolocation on non-HTTPS,
+        //     except localhost). GitHub Pages always uses HTTPS so this
+        //     should not be an issue in production.
         if (!navigator.geolocation) {
-            this._setSignalEl('GPS NOT SUPPORTED', '');
-            Utils.showToast('Geolocation not supported', 'error');
+            const isHttp = location.protocol === 'http:' && location.hostname !== 'localhost';
+            const msg = isHttp
+                ? 'GPS memerlukan HTTPS — buka via https://'
+                : 'GPS tidak tersedia di browser ini';
+            this._setSignalEl('NO GPS', 'gps-poor');
+            Utils.showToast(msg, 'error', 8000);
+            console.warn('[GPS]', msg, location.protocol);
             return;
         }
 
+        this._setSignalEl('ACQUIRING', 'gps-searching');
         const options = {
             enableHighAccuracy : Utils.Storage.get('high_accuracy', true),
-            timeout            : 10000,
+            timeout            : 15000,
             maximumAge         : 0
         };
 
@@ -218,7 +232,67 @@ class SpeedometerModule {
             (err) => this._onError(err),
             options
         );
-        this._setSignalEl('ACQUIRING', 'gps-searching');
+    }
+
+    _onError(error) {
+        const ERR = {
+            1: { label:'DENIED',      cls:'gps-poor',
+                 msg:'Izin GPS ditolak.\n→ Buka Settings HP › Apps › Browser › Permissions › Location › Allow.' },
+            2: { label:'UNAVAILABLE', cls:'gps-fair',
+                 msg:'GPS tidak dapat menentukan posisi. Aktifkan Location di Settings HP.' },
+            3: { label:'TIMEOUT',     cls:'gps-fair',
+                 msg:'GPS timeout — mencoba ulang otomatis…' }
+        };
+        const info = ERR[error.code] || { label:'GPS ERROR', cls:'gps-poor', msg:`GPS error (${error.code})` };
+
+        this._setSignalEl(info.label, info.cls);
+
+        if (error.code === 1) {
+            // Permission denied — show persistent prompt in the GPS panel
+            Utils.showToast('Izin GPS diperlukan — lihat panel GPS', 'error', 6000);
+            this._showGPSPermissionPrompt();
+        } else if (error.code === 3) {
+            // Timeout — auto-retry in 5 s
+            Utils.showToast(info.msg, 'warning', 3000);
+            if (!this._retryTimer) {
+                this._retryTimer = setTimeout(() => {
+                    this._retryTimer = null;
+                    if (this.watchId !== null) {
+                        navigator.geolocation.clearWatch(this.watchId);
+                        this.watchId = null;
+                    }
+                    this._startGPS();
+                }, 5000);
+            }
+        } else {
+            Utils.showToast(info.msg, 'warning', 5000);
+        }
+    }
+
+    /** Shows a "Allow Location" button inside the GPS info panel. */
+    _showGPSPermissionPrompt() {
+        const panel = document.getElementById('gps-info-panel');
+        if (!panel || panel.querySelector('.gps-perm-prompt')) return;
+
+        const div = document.createElement('div');
+        div.className = 'gps-perm-prompt';
+        div.innerHTML = `
+            <span class="gps-perm-icon">📍</span>
+            <span class="gps-perm-msg">Izin lokasi diperlukan</span>
+            <button class="gps-perm-btn" id="gps-allow-btn">Izinkan GPS</button>`;
+        panel.appendChild(div);
+
+        document.getElementById('gps-allow-btn')?.addEventListener('click', () => {
+            div.querySelector('.gps-perm-msg').textContent = 'Meminta izin…';
+            navigator.geolocation.getCurrentPosition(
+                () => { div.remove(); this._startGPS(); },
+                () => {
+                    div.querySelector('.gps-perm-msg').textContent = 'Ditolak — buka Settings HP';
+                    div.querySelector('#gps-allow-btn').textContent = 'Coba Lagi';
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        });
     }
 
     _onFix(position) {
@@ -295,19 +369,8 @@ class SpeedometerModule {
         window.tripComputer?.update(lat, lng, this.targetSpeed);
     }
 
-    _onError(error) {
-        const msgs = {
-            1: 'PERMISSION DENIED',
-            2: 'POSITION UNAVAILABLE',
-            3: 'GPS TIMEOUT'
-        };
-        const msg = msgs[error.code] || 'GPS ERROR';
-        this._setSignalEl(msg, 'gps-poor');
-        Utils.showToast(`GPS: ${msg}`, 'error');
-    }
-
     // ─────────────────────────────────────────────────────
-    //  GPS SIGNAL QUALITY  (unchanged)
+    //  GPS SIGNAL QUALITY
     // ─────────────────────────────────────────────────────
     _updateSignalQuality(accuracy) {
         let label, cls;

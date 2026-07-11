@@ -32,7 +32,7 @@
     style-src 'self' 'unsafe-inline';
     img-src 'self' data:;
     font-src 'self';
-    connect-src 'self' https://nominatim.openstreetmap.org https://router.project-osrm.org https://data.source.coop https://api.open-meteo.com;
+    connect-src 'self' https://nominatim.openstreetmap.org https://router.project-osrm.org https://data.source.coop https://api.open-meteo.com https://overpass-api.de;
     worker-src 'self';
     manifest-src 'self';
     base-uri 'self';
@@ -97,6 +97,80 @@
 <!-- ╔══════════════════════════════════════════════════════════════╗
      ║                        #APP SHELL                           ║
      ╚══════════════════════════════════════════════════════════════╝ -->
+  <div id="splash-screen">
+
+    <!-- ═══════════ LAYER 1: Corner frame lines (draw in from corners) ═══════════ -->
+    <div class="sp-frame">
+      <div class="sp-corner sp-tl"></div>
+      <div class="sp-corner sp-tr"></div>
+      <div class="sp-corner sp-bl"></div>
+      <div class="sp-corner sp-br"></div>
+    </div>
+
+    <!-- ═══════════ LAYER 2: Horizontal scan line (power-on effect) ═════════════ -->
+    <div class="sp-scanline"></div>
+
+    <!-- ═══════════ LAYER 3: Central emblem ═════════════════════════════════════ -->
+    <div class="sp-center">
+
+      <div class="sp-emblem-wrap">
+        <!-- Rotating ring segments (outer) -->
+        <svg class="sp-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <!-- Static dim track -->
+          <circle cx="110" cy="110" r="104" fill="none"
+                  stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+          <!-- Animated arc — draws around the emblem -->
+          <circle class="sp-ring-arc" cx="110" cy="110" r="104" fill="none"
+                  stroke-width="1.2" stroke-linecap="round"
+                  transform="rotate(-90 110 110)"/>
+          <!-- Inner thin ring -->
+          <circle cx="110" cy="110" r="92" fill="none"
+                  stroke="rgba(61,219,196,0.12)" stroke-width="0.8"/>
+        </svg>
+
+        <!-- Emblem disc — white/cream badge that holds the logo -->
+        <div class="sp-emblem-disc">
+          <img src="assets/icons/beat-logo.png" class="sp-logo" alt="BeAT">
+        </div>
+      </div>
+
+      <!-- Brand identity (appears after emblem settles) -->
+      <div class="sp-identity">
+        <div class="sp-rule-wrap">
+          <div class="sp-rule"></div>
+          <div class="sp-brand-name">MOTO<span>DASH</span></div>
+          <div class="sp-rule"></div>
+        </div>
+        <div class="sp-model-line">BeAT Series &nbsp;·&nbsp; Premium Digital Cockpit</div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════ LAYER 4: Bottom status strip ══════════════════════════════ -->
+    <div class="sp-footer">
+      <div class="sp-syscheck">
+        <div class="sp-sys-item" id="sys-gps">
+          <span class="sys-dot"></span><span class="sys-label">GPS ENGINE</span>
+        </div>
+        <div class="sp-sys-item" id="sys-map">
+          <span class="sys-dot"></span><span class="sys-label">MAP ENGINE</span>
+        </div>
+        <div class="sp-sys-item" id="sys-media">
+          <span class="sys-dot"></span><span class="sys-label">MEDIA STACK</span>
+        </div>
+      </div>
+      <div class="sp-prog-wrap">
+        <div class="sp-prog-bar">
+          <div class="sp-prog-fill" id="splash-bar-fill"></div>
+        </div>
+        <div class="sp-prog-meta">
+          <span id="splash-status">STARTING UP</span>
+          <span id="splash-pct">0 %</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
 <div id="app">
 
   <!-- ═══════════════ STATUS BAR ═══════════════ -->
@@ -472,7 +546,32 @@
             </div>
           </div>
 
-          <!-- Map canvas (filled by MapLibre GL JS) -->
+          <!-- POI Category chips (scroll horizontal) -->
+          <div id="poi-category-bar" class="poi-cat-bar">
+            <button class="poi-cat-btn" data-cat="restaurant" data-icon="🍽">Makan</button>
+            <button class="poi-cat-btn" data-cat="fuel"       data-icon="⛽">SPBU</button>
+            <button class="poi-cat-btn" data-cat="hospital"   data-icon="🏥">RS / Klinik</button>
+            <button class="poi-cat-btn" data-cat="factory"    data-icon="🏭">Pabrik</button>
+            <button class="poi-cat-btn" data-cat="mosque"     data-icon="🕌">Masjid</button>
+            <button class="poi-cat-btn" data-cat="school"     data-icon="🏫">Sekolah</button>
+            <button class="poi-cat-btn" data-cat="hotel"      data-icon="🏨">Hotel</button>
+            <button class="poi-cat-btn" data-cat="bank"       data-icon="🏦">Bank / ATM</button>
+            <button class="poi-cat-btn" data-cat="supermarket" data-icon="🛒">Minimart</button>
+            <button class="poi-cat-btn" data-cat="parking"    data-icon="🅿">Parkir</button>
+            <button class="poi-cat-btn" data-cat="pharmacy"   data-icon="💊">Apotek</button>
+          </div>
+
+          <!-- POI floating result list (slides up from bottom, max 40% height) -->
+          <div id="poi-panel" class="poi-panel" style="display:none">
+            <div class="poi-panel-header">
+              <span id="poi-panel-title" class="poi-panel-title">Hasil POI</span>
+              <div class="poi-panel-actions">
+                <span id="poi-panel-count" class="poi-panel-count"></span>
+                <button id="poi-panel-close" class="poi-close-btn" title="Tutup">✕</button>
+              </div>
+            </div>
+            <div id="poi-results-list" class="poi-results-list"></div>
+          </div>
           <div id="map-container">
             <div id="map"></div>
             <!-- Loading state — shown while MapLibre initializes, hidden by maps.js -->
@@ -1126,11 +1225,7 @@
 
   </nav><!-- /dock -->
 
-  <!-- ══ Android PWA Install Banner ══════════════════════════════
-       Shown only when the browser fires beforeinstallprompt (Chrome
-       on Android). Dismissed on tap "Install" or "Nanti" (Later).
-       Hidden completely once the app is already installed (standalone).
-  ═══════════════════════════════════════════════════════════════ -->
+  <!-- PWA Install Banner (see app.js _setupPWAInstall) -->
   <div id="pwa-install-banner" style="display:none">
     <div class="pwa-banner-icon">
       <img src="assets/icons/icon-192.png" width="40" height="40" alt="MotoDash">
@@ -1142,6 +1237,12 @@
     <button id="pwa-install-btn" class="pwa-btn-install">Install</button>
     <button id="pwa-dismiss-btn" class="pwa-btn-dismiss">Nanti</button>
   </div>
+
+  <!-- ═════════════════════ SPLASH / BOOT SCREEN ═══════════════════
+       5-second cinematic OEM boot sequence.
+       Logo displayed in NATURAL colors via spotlight technique
+       (no CSS invert filter — chrome metallic finish preserved).
+  ═════════════════════════════════════════════════════════════════ -->
 
   <!-- Toast notification -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>

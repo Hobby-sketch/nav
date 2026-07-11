@@ -555,6 +555,23 @@ body {
 .info-value.gps-poor,
 .info-value.gps-searching  { color:var(--clr-danger);    }
 
+/* GPS permission prompt (shown when geolocation is denied) */
+.gps-perm-prompt {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:10px; margin-top:6px;
+    background:rgba(255,68,68,.07); border:1px solid rgba(255,68,68,.25);
+    border-radius:var(--radius-md); text-align:center;
+}
+.gps-perm-icon { font-size:22px; }
+.gps-perm-msg  { font-size:11px; color:var(--surf-text-dim); line-height:1.4; }
+.gps-perm-btn  {
+    padding:7px 16px; background:var(--brand-primary); border:none;
+    border-radius:var(--radius-sm); color:#000; font-family:var(--font-display);
+    font-size:10px; font-weight:700; letter-spacing:1.5px; cursor:pointer;
+    transition:opacity .15s;
+}
+.gps-perm-btn:hover { opacity:.85; }
+
 /* Compass widget */
 #compass-widget { display:flex; justify-content:center; }
 .compass-rose {
@@ -1159,66 +1176,222 @@ body {
 .dock-btn:active::after { opacity:.08; }
 
 /* ══════════════════════════════════════════════════════════════════
-   PWA INSTALL BANNER (Android Chrome — beforeinstallprompt)
+   SPLASH / BOOT SCREEN — Premium OEM 5-second cinematic sequence
+   ══════════════════════════════════════════════════════════════════
+   Design language: Honda Gold Wing / BMW R1250GS TFT boot style.
+   ─ Pure black field with deep vignette (OEM instrument cluster on)
+   ─ Circular chrome emblem disc (logo in natural colors, no invert)
+   ─ SVG ring arc that draws around the emblem (progress metaphor)
+   ─ Corner bracket frame lines animate in from corners
+   ─ Brand name / model line / system-check strip / progress bar
    ══════════════════════════════════════════════════════════════════ */
-#pwa-install-banner {
-    position:fixed; bottom:calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 8px);
-    left:12px; right:12px; z-index:8000;
-    display:flex; align-items:center; gap:12px;
-    padding:12px 14px;
-    background:rgba(4,12,22,.97);
-    border:1px solid var(--clr-primary);
-    border-radius:12px;
-    box-shadow:var(--brand-glow-primary), var(--elevation-4);
-    backdrop-filter:blur(18px);
-    animation:banner-slide-up .35s var(--ease-decel) both;
+
+#splash-screen {
+    position:fixed; inset:0;
+    z-index:10000;
+    background:#000;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    overflow:hidden;
+    transition:opacity .9s ease;
 }
-@keyframes banner-slide-up {
-    from { transform:translateY(20px); opacity:0; }
-    to   { transform:translateY(0);    opacity:1; }
+#splash-screen.hidden { opacity:0; pointer-events:none; }
+
+/* ── Power-on scanline ─────────────────────────────────────────── */
+.sp-scanline {
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,
+        transparent 0%, rgba(61,219,196,.6) 45%,
+        rgba(255,255,255,.4) 50%,
+        rgba(61,219,196,.6) 55%, transparent 100%);
+    animation:sp-scan .7s cubic-bezier(.4,0,.6,1) forwards;
+    animation-delay:.05s; opacity:0;
 }
-.pwa-banner-icon img { border-radius:10px; flex-shrink:0; }
-.pwa-banner-text {
-    flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;
+@keyframes sp-scan {
+    0%   { top:0%;   opacity:1; }
+    90%  { opacity:.6; }
+    100% { top:100%; opacity:0; }
 }
-.pwa-banner-text strong {
-    font-family:var(--f-display); font-size:13px; font-weight:700;
-    color:var(--clr-text); letter-spacing:.5px;
+
+/* ── Corner frame brackets ─────────────────────────────────────── */
+.sp-frame { position:absolute; inset:clamp(14px,3vw,28px); pointer-events:none; }
+.sp-corner {
+    position:absolute; width:0; height:0;
+    border-color:rgba(61,219,196,.45);
+    border-style:solid;
+    animation:sp-corner-in .55s cubic-bezier(.2,.8,.3,1) forwards;
+    animation-delay:.5s; opacity:0;
 }
-.pwa-banner-text span {
-    font-size:11px; color:var(--clr-dim); line-height:1.4;
+@keyframes sp-corner-in {
+    from { width:0; height:0; opacity:0; }
+    to   { width:clamp(20px,4vw,36px); height:clamp(20px,4vw,36px); opacity:1; }
 }
-.pwa-btn-install {
-    flex-shrink:0; padding:8px 16px;
-    background:var(--clr-primary);
-    border:none; border-radius:8px;
-    color:var(--p-black); font-family:var(--f-display); font-size:11px;
-    font-weight:700; letter-spacing:1px; cursor:pointer;
-    transition:opacity .15s;
+.sp-tl { top:0; left:0; border-width:1.5px 0 0 1.5px; }
+.sp-tr { top:0; right:0; border-width:1.5px 1.5px 0 0; }
+.sp-bl { bottom:0; left:0; border-width:0 0 1.5px 1.5px; }
+.sp-br { bottom:0; right:0; border-width:0 1.5px 1.5px 0; }
+
+/* ── Centre layout ─────────────────────────────────────────────── */
+.sp-center {
+    display:flex; flex-direction:column;
+    align-items:center; gap:clamp(18px,3vw,30px);
+    flex:1; justify-content:center;
 }
-.pwa-btn-install:hover { opacity:.85; }
-.pwa-btn-dismiss {
-    flex-shrink:0; padding:8px 10px;
-    background:transparent; border:1px solid var(--surf-5);
-    border-radius:8px; color:var(--clr-muted);
-    font-size:11px; cursor:pointer; letter-spacing:.5px;
-    transition:all .15s;
+
+/* ── Emblem ────────────────────────────────────────────────────── */
+.sp-emblem-wrap {
+    position:relative;
+    width:clamp(160px,34vw,260px);
+    height:clamp(160px,34vw,260px);
+    display:flex; align-items:center; justify-content:center;
+    animation:sp-emblem-in .9s cubic-bezier(.2,.8,.3,1) forwards;
+    animation-delay:.6s; opacity:0;
 }
-.pwa-btn-dismiss:hover { border-color:var(--clr-dim); color:var(--clr-dim); }
-.toast {
-    position:fixed; bottom:calc(var(--dock-h) + 10px); left:50%;
-    transform:translateX(-50%) translateY(12px); z-index:9999;
-    padding:9px 20px; border-radius:20px; font-size:12px;
-    background:rgba(5,12,20,.96); border:1px solid var(--border);
-    color:var(--clr-text); opacity:0; pointer-events:none;
-    backdrop-filter:blur(14px); white-space:nowrap;
-    transition:opacity .25s, transform .25s var(--ease);
+@keyframes sp-emblem-in {
+    from { opacity:0; transform:scale(.78); }
+    to   { opacity:1; transform:scale(1); }
 }
-.toast.show          { opacity:1; transform:translateX(-50%) translateY(0); }
-.toast.toast-success { border-color:var(--clr-secondary); color:var(--clr-secondary); }
-.toast.toast-warning { border-color:var(--clr-warning);   color:var(--clr-warning);   }
-.toast.toast-error   { border-color:var(--clr-danger);    color:var(--clr-danger);    }
-.toast.toast-info    { border-color:var(--clr-primary);   color:var(--clr-primary);   }
+
+/* SVG ring sits absolutely over the disc */
+.sp-ring-svg {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    overflow:visible;
+}
+
+/* The arc that draws around the emblem (stroke-dasharray animation) */
+.sp-ring-arc {
+    stroke:rgba(61,219,196,.75);
+    stroke-dasharray:0 654;   /* 654 ≈ 2π×104 */
+    stroke-dashoffset:0;
+    animation:sp-arc-draw 2.2s cubic-bezier(.4,0,.2,1) forwards;
+    animation-delay:1s;
+    filter:drop-shadow(0 0 4px rgba(61,219,196,.8));
+}
+@keyframes sp-arc-draw {
+    from { stroke-dasharray:0 654; }
+    to   { stroke-dasharray:654 0; }
+}
+
+/* Emblem disc — white badge that shows logo in natural colors */
+.sp-emblem-disc {
+    position:relative; z-index:1;
+    width:76%; height:76%;
+    border-radius:50%;
+    /* Radial gradient: bright white centre fades to dark edge  */
+    background:radial-gradient(ellipse 90% 85% at 50% 48%,
+        #ffffff 0%, #f2f2f2 45%, #c8c8c8 70%, #505050 88%, #101010 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.12),
+        0 0 32px rgba(255,255,255,.06),
+        inset 0 2px 8px rgba(255,255,255,.35),
+        inset 0 -2px 8px rgba(0,0,0,.4);
+    overflow:hidden;
+}
+
+.sp-logo {
+    width:82%; height:82%;
+    object-fit:contain;
+    /* No filter — logo shown in exact natural colors inside white disc */
+    display:block;
+    position:relative; z-index:1;
+}
+
+/* ── Brand identity ─────────────────────────────────────────────── */
+.sp-identity {
+    display:flex; flex-direction:column;
+    align-items:center; gap:8px;
+    animation:sp-rise .6s ease forwards;
+    animation-delay:2.4s; opacity:0;
+}
+@keyframes sp-rise {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+
+.sp-rule-wrap {
+    display:flex; align-items:center; gap:clamp(10px,2vw,18px);
+}
+.sp-rule {
+    height:1px; width:clamp(36px,8vw,80px);
+    background:linear-gradient(90deg,transparent,rgba(61,219,196,.6));
+}
+.sp-rule + .sp-brand-name + .sp-rule {
+    background:linear-gradient(270deg,transparent,rgba(61,219,196,.6));
+}
+
+.sp-brand-name {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(16px,3.2vw,28px);
+    font-weight:900; letter-spacing:clamp(6px,1.5vw,14px);
+    color:rgba(255,255,255,.92);
+    text-shadow:0 0 22px rgba(61,219,196,.35);
+    white-space:nowrap;
+}
+.sp-brand-name span { color:#3DDBC4; }
+
+.sp-model-line {
+    font-family:'Rajdhani',sans-serif;
+    font-size:clamp(9px,1.5vw,12px);
+    letter-spacing:clamp(3px,1vw,6px);
+    color:rgba(255,255,255,.32);
+    text-transform:uppercase; white-space:nowrap;
+}
+
+/* ── Footer strip ───────────────────────────────────────────────── */
+.sp-footer {
+    width:100%; max-width:clamp(280px,55vw,540px);
+    padding:0 clamp(16px,3vw,32px) clamp(18px,3vh,32px);
+    display:flex; flex-direction:column; gap:10px;
+    animation:sp-rise .5s ease forwards;
+    animation-delay:3s; opacity:0;
+}
+
+/* System-check row */
+.sp-syscheck {
+    display:flex; justify-content:center; gap:clamp(12px,3vw,28px);
+}
+.sp-sys-item {
+    display:flex; align-items:center; gap:6px;
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(8px,1.1vw,10px);
+    letter-spacing:1.5px; color:rgba(255,255,255,.28);
+    transition:color .3s ease;
+}
+.sp-sys-item.ok { color:rgba(61,219,196,.75); }
+
+.sys-dot {
+    width:5px; height:5px; border-radius:50%;
+    background:rgba(255,255,255,.18);
+    transition:all .3s ease;
+}
+.sp-sys-item.ok .sys-dot {
+    background:#3DDBC4;
+    box-shadow:0 0 6px rgba(61,219,196,.9);
+}
+
+/* Progress bar */
+.sp-prog-wrap { display:flex; flex-direction:column; gap:5px; }
+.sp-prog-bar {
+    height:2px; background:rgba(255,255,255,.07); border-radius:1px; overflow:hidden;
+}
+.sp-prog-fill {
+    height:100%; width:0; border-radius:1px;
+    background:linear-gradient(90deg,#3DDBC4,#a0f4ea);
+    box-shadow:0 0 8px rgba(61,219,196,.7);
+    transition:width 4.2s cubic-bezier(.4,0,.15,1);
+}
+.sp-prog-meta {
+    display:flex; justify-content:space-between;
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(8px,1vw,10px); letter-spacing:1.5px;
+}
+#splash-status { color:rgba(255,255,255,.3); }
+#splash-pct    { color:rgba(61,219,196,.5); }
+
+/* ── App reveal (opacity comes from removing splash, not hiding app) ── */
+/* NOTE: #app is always visible — splash covers it as position:fixed  */
 
 /* ══════════════════════════════════════════════════════════════════
    PWA SAFE-AREA — notch / status-bar top inset
@@ -1319,4 +1492,375 @@ body {
     .techno-value { font-size:22px; }
     .techno-unit  { display:none; }
     .techno-led-bar { display:none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CAR LAUNCHER UI THEME + POI SEARCH STYLES
+   Inspired by premium Android car launcher dashboard themes:
+   dark translucent cards · rounded containers · bold readouts ·
+   teal/cyan accent on true-black field
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Shared glass-card used throughout the car launcher UI ──────── */
+.cl-card {
+    background   : rgba(255,255,255,.04);
+    border       : 1px solid rgba(255,255,255,.09);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.cl-card:hover { border-color:rgba(61,219,196,.22); }
+
+/* ── LEFT PANEL — car launcher dashboard style ──────────────────── */
+#left-panel {
+    gap          : 6px;
+    padding      : 10px 8px;
+    background   : linear-gradient(175deg,#07090c 0%,#03060a 100%);
+}
+
+/* Prominent vehicle-status badge */
+.vehicle-status.moving {
+    font-size:8px; letter-spacing:3px; padding:4px 14px;
+    border-radius:6px;
+    background:color-mix(in srgb,var(--clr-primary) 14%,transparent);
+    border:1px solid var(--clr-primary);
+    box-shadow:0 0 12px color-mix(in srgb,var(--clr-primary) 30%,transparent),
+               inset 0 1px 0 rgba(255,255,255,.06);
+}
+.vehicle-status.stopped {
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.07);
+}
+
+/* Cluster status icons — car launcher pill row */
+.cluster-status-col {
+    flex-direction:row; gap:6px;
+    position:static; transform:none;
+    justify-content:center; width:100%;
+}
+.cluster-status-icon {
+    width:32px; height:32px; border-radius:8px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07);
+    color:rgba(255,255,255,.18);
+}
+.cluster-status-icon.active {
+    background:color-mix(in srgb,var(--clr-primary) 14%,transparent);
+    border-color:var(--clr-primary);
+    color:var(--clr-primary);
+    box-shadow:0 0 10px color-mix(in srgb,var(--clr-primary) 35%,transparent);
+}
+
+/* Cluster info strip — bold car launcher cards */
+.cluster-info-strip {
+    gap:6px; flex-wrap:nowrap;
+}
+.cluster-info-item {
+    flex:1; background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.07); border-radius:10px;
+    padding:6px 8px; align-items:center; min-width:0;
+}
+.cluster-info-label {
+    font-size:7px; letter-spacing:2px; color:var(--clr-primary); opacity:.7;
+}
+.cluster-info-value {
+    font-size:14px; font-weight:700; letter-spacing:.3px; margin-top:1px;
+}
+.cluster-info-div { display:none; }  /* replaced by card gap */
+
+/* GPS info panel — glass card */
+.info-panel {
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.07);
+}
+.gps-cell { padding:3px 0; }
+.info-label { font-size:7px; opacity:.55; }
+.info-value  { font-size:10px; font-weight:600; }
+
+/* ── DOCK — car launcher bottom nav ────────────────────────────── */
+#dock {
+    background:rgba(4,8,14,.94);
+    border-top:1px solid rgba(61,219,196,.12);
+    box-shadow:0 -1px 0 0 rgba(61,219,196,.18),
+               0 -12px 32px -8px rgba(0,0,0,.5);
+}
+.dock-btn {
+    gap:6px; font-size:8px; letter-spacing:1.5px;
+    border-radius:10px; margin:4px 2px;
+    border-top:none; border:1px solid transparent;
+    transition:all .18s ease;
+}
+.dock-btn svg { width:22px; height:22px; }
+.dock-btn.active {
+    background:rgba(61,219,196,.1);
+    border-color:rgba(61,219,196,.3);
+    color:#3DDBC4;
+    box-shadow:0 0 12px rgba(61,219,196,.2);
+}
+.dock-btn:hover {
+    background:rgba(255,255,255,.04);
+    border-color:rgba(255,255,255,.1);
+}
+.dock-btn::after { display:none; }
+
+/* ── MAP TOOLBAR — cleaner glass pill ────────────────────────────── */
+#map-toolbar {
+    top:10px; gap:7px;
+}
+.search-container {
+    border-radius:12px; padding:2px 0;
+    background:rgba(4,10,18,.92);
+    border:1px solid rgba(61,219,196,.2);
+    box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+#search-input {
+    padding:10px 16px; font-size:13px;
+}
+.tool-btn {
+    border-radius:12px; width:44px; height:44px;
+    background:rgba(4,10,18,.92);
+    border:1px solid rgba(61,219,196,.2);
+    box-shadow:0 4px 16px rgba(0,0,0,.35);
+    transition:all .18s ease;
+}
+.tool-btn:hover {
+    background:rgba(61,219,196,.12);
+    border-color:var(--clr-primary);
+    box-shadow:0 0 16px rgba(61,219,196,.25);
+    transform:scale(1.06);
+}
+
+/* ── POI CATEGORY BAR ────────────────────────────────────────────── */
+.poi-cat-bar {
+    position:absolute;
+    top:64px; left:10px; right:10px;
+    z-index:500;
+    display:flex; gap:7px;
+    overflow-x:auto; padding:0 2px 4px;
+    scrollbar-width:none;
+}
+.poi-cat-bar::-webkit-scrollbar { display:none; }
+
+.poi-cat-btn {
+    flex-shrink:0;
+    display:flex; align-items:center; gap:5px;
+    padding:7px 14px; border-radius:20px;
+    background:rgba(4,10,18,.92);
+    border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.75);
+    font-family:var(--f-ui); font-size:12px; font-weight:600;
+    white-space:nowrap; cursor:pointer;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    box-shadow:0 2px 12px rgba(0,0,0,.35);
+    transition:all .18s ease;
+}
+.poi-cat-btn:hover {
+    background:rgba(61,219,196,.12);
+    border-color:rgba(61,219,196,.4);
+    color:#fff;
+    transform:translateY(-1px);
+    box-shadow:0 4px 16px rgba(0,0,0,.4),
+               0 0 10px rgba(61,219,196,.15);
+}
+.poi-cat-btn.active {
+    background:rgba(61,219,196,.18);
+    border-color:var(--clr-primary);
+    color:var(--clr-primary);
+    font-weight:700;
+    box-shadow:0 4px 18px rgba(0,0,0,.4),
+               0 0 14px rgba(61,219,196,.3);
+}
+
+/* ── POI MAP MARKER ──────────────────────────────────────────────── */
+.poi-map-marker {
+    font-size:24px; line-height:1;
+    cursor:pointer;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.55));
+    transition:transform .15s ease;
+    user-select:none;
+}
+.poi-map-marker:hover { transform:scale(1.2) translateY(-3px); }
+
+/* ── POI RESULT PANEL (slides up inside map area) ───────────────── */
+.poi-panel {
+    position:absolute;
+    bottom:0; left:0; right:0;
+    z-index:490;
+    max-height:42%;
+    background:rgba(4,10,18,.97);
+    border-top:1px solid rgba(61,219,196,.22);
+    border-radius:16px 16px 0 0;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    flex-direction:column;
+    box-shadow:0 -6px 28px rgba(0,0,0,.5);
+    animation:poi-panel-up .28s ease;
+}
+@keyframes poi-panel-up {
+    from { transform:translateY(40px); opacity:.6; }
+    to   { transform:translateY(0);    opacity:1;  }
+}
+
+.poi-panel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px 8px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    flex-shrink:0;
+}
+.poi-panel-title {
+    font-family:var(--f-display); font-size:12px; font-weight:700;
+    letter-spacing:2px; color:#fff;
+}
+.poi-panel-actions {
+    display:flex; align-items:center; gap:10px;
+}
+.poi-panel-count {
+    font-family:var(--f-mono); font-size:10px;
+    color:var(--clr-primary); letter-spacing:1px;
+}
+.poi-close-btn {
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    border-radius:6px; color:rgba(255,255,255,.6); width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:11px; line-height:1;
+    transition:all .15s;
+}
+.poi-close-btn:hover { background:rgba(255,68,68,.15); border-color:#FF4444; color:#FF4444; }
+
+.poi-results-list {
+    flex:1; overflow-y:auto; padding:6px 10px 10px;
+    scrollbar-width:thin; scrollbar-color:rgba(61,219,196,.25) transparent;
+}
+.poi-results-list::-webkit-scrollbar { width:3px; }
+.poi-results-list::-webkit-scrollbar-thumb {
+    background:rgba(61,219,196,.25); border-radius:2px;
+}
+
+.poi-result-item {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 10px; border-radius:10px;
+    cursor:pointer; margin-bottom:4px;
+    border:1px solid transparent;
+    transition:all .15s ease;
+}
+.poi-result-item:hover {
+    background:rgba(61,219,196,.08);
+    border-color:rgba(61,219,196,.18);
+}
+.poi-result-item.highlighted {
+    background:rgba(61,219,196,.15);
+    border-color:rgba(61,219,196,.35);
+}
+
+.poi-ri-icon {
+    font-size:22px; flex-shrink:0; width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.05); border-radius:10px;
+}
+.poi-ri-info { flex:1; min-width:0; }
+.poi-ri-name {
+    font-size:13px; font-weight:600; color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.poi-ri-addr {
+    font-size:11px; color:rgba(255,255,255,.4);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-top:2px;
+}
+.poi-ri-dist {
+    font-family:var(--f-mono); font-size:10px;
+    color:var(--clr-primary); margin-top:3px; letter-spacing:.5px;
+}
+.poi-ri-arrow {
+    font-size:18px; color:rgba(61,219,196,.5);
+    flex-shrink:0; font-weight:300;
+}
+
+/* ── SEARCH RESULTS — improved car launcher style ───────────────── */
+#search-results {
+    top:66px; border-radius:12px;
+    background:rgba(4,10,18,.97);
+    border:1px solid rgba(61,219,196,.18);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.search-result-item {
+    padding:11px 16px; gap:12px;
+    border-bottom:1px solid rgba(255,255,255,.05);
+    border-radius:0;
+    transition:background .15s;
+}
+.search-result-item:first-child { border-radius:12px 12px 0 0; }
+.search-result-item:last-child  { border-bottom:none; border-radius:0 0 12px 12px; }
+.search-result-item:hover { background:rgba(61,219,196,.09); }
+
+/* ── STATUS BAR — car launcher style ────────────────────────────── */
+#status-bar {
+    background:rgba(2,6,12,.9);
+    border-bottom:1px solid rgba(61,219,196,.12);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    box-shadow:0 1px 0 rgba(61,219,196,.1),
+               0 4px 20px rgba(0,0,0,.3);
+}
+
+/* ── NAV INSTRUCTION BAR — car launcher card style ──────────────── */
+#nav-instruction-bar {
+    border-radius:14px;
+    background:rgba(4,10,18,.97);
+    border:1.5px solid var(--clr-primary);
+    box-shadow:0 4px 24px rgba(0,0,0,.5),
+               var(--brand-glow-primary);
+}
+
+/* ── TRIP METER BAR ─────────────────────────────────────────────── */
+#maps-trip-meter {
+    background:rgba(4,10,18,.96);
+    border-top:1px solid rgba(61,219,196,.12);
+    padding:8px 14px;
+}
+.mtm-item { min-width:40px; }
+.mtm-label { font-size:8px; color:rgba(61,219,196,.55); }
+.mtm-value { font-size:13px; color:#fff; font-weight:700; }
+
+/* ── SETTINGS / PANELS — car launcher card layout ───────────────── */
+.panel-header {
+    background:rgba(4,10,18,.8);
+    border-radius:0;
+    border-bottom:1px solid rgba(61,219,196,.12);
+    padding:12px 16px;
+}
+.settings-section { border-bottom:1px solid rgba(255,255,255,.04); }
+.settings-section-title { color:var(--clr-primary); opacity:.8; }
+.setting-label { color:rgba(255,255,255,.6); font-size:13px; }
+
+.trip-card {
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.07);
+    transition:border-color .2s;
+}
+.trip-card:hover { border-color:rgba(61,219,196,.2); }
+
+/* ── QUICK SETTINGS — car launcher dark glass ───────────────────── */
+#quick-settings-panel {
+    background:rgba(3,8,15,.98);
+    border-bottom:1px solid rgba(61,219,196,.18);
+}
+.qs-chip.active {
+    background:rgba(61,219,196,.16);
+    border-color:var(--clr-primary);
+    box-shadow:0 0 10px rgba(61,219,196,.2);
+}
+
+/* ── RESPONSIVE adjustments for portrait / small screens ─────────── */
+@media (max-width:680px) {
+    .poi-cat-bar { gap:5px; }
+    .poi-cat-btn { padding:6px 10px; font-size:11px; }
+    .poi-panel   { max-height:50%; }
+}
+@media (max-height:480px) {
+    .poi-panel   { max-height:55%; }
+    .poi-cat-bar { top:60px; }
 }

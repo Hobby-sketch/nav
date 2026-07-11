@@ -92,31 +92,73 @@ class MediaModule {
         });
 
         this.audio.addEventListener('error', (e) => {
-            const codes = { 1:'ABORTED', 2:'NETWORK', 3:'DECODE', 4:'NOT_SUPPORTED' };
-            const code  = codes[e.target?.error?.code] || 'UNKNOWN';
-            console.error(`[Media] Audio error: ${code}`);
-            Utils.showToast(`Playback error (${code}) — skipping`, 'error');
-            setTimeout(() => this._next(), 1200);
+            const code = e.target?.error?.code;
+            const name = this.playlist[this.currentIdx]?.title || 'track';
+
+            if (code === 4) {
+                // NOT_SUPPORTED — this codec genuinely can't play in this browser.
+                // Determine the format so the user knows what to convert.
+                const file = this.playlist[this.currentIdx]?.file;
+                const ext  = (file?.name?.match(/\.([^.]+)$/) || [])[1]?.toUpperCase() || '?';
+                const msg  = `File ${ext} tidak bisa diputar di browser ini.\n`
+                           + `Konversi ke MP3 atau M4A untuk hasil terbaik.`;
+
+                console.warn(`[Media] NOT_SUPPORTED: "${name}" (${ext})`);
+                Utils.showToast(msg, 'error', 6000);
+
+                // Only auto-advance if there are more tracks to play
+                if (this.playlist.length > 1) {
+                    setTimeout(() => this._next(), 1500);
+                }
+                return;
+            }
+
+            // Other codes: 1=ABORTED, 2=NETWORK, 3=DECODE
+            const labels = {
+                1: 'Pemuatan file dibatalkan',
+                2: 'Gagal memuat file (network)',
+                3: 'File rusak atau tidak lengkap',
+            };
+            const label = labels[code] || `Error tidak dikenal (kode ${code})`;
+            console.error(`[Media] Audio error ${code}: "${name}"`, e.target?.error);
+            Utils.showToast(`${label}: "${name}"`, 'error', 4000);
+            if (this.playlist.length > 1) setTimeout(() => this._next(), 1500);
         });
     }
 
     // ─────────────────────────────────────────────────────
     //  FILE LOADING
     // ─────────────────────────────────────────────────────
+    /**
+     * WHY NO canPlayType() PRE-CHECK:
+     * canPlayType() is unreliable on Android WebView and some Chrome
+     * variants — it returns '' for MP3/AAC even when the browser can
+     * play them perfectly. The audio element's error event (code 4 =
+     * NOT_SUPPORTED) is always accurate, so we rely on that instead
+     * and simply skip unsupported files at playback time.
+     */
     async _loadFiles(files) {
         if (!files || !files.length) return;
 
-        const audioFiles = Array.from(files).filter(f =>
-            f.type.startsWith('audio/') || /\.(mp3|aac|ogg|wav|flac|m4a|opus)$/i.test(f.name)
-        );
+        // Accept anything that looks like audio — by MIME type OR
+        // by file extension (Android often sends empty/wrong MIME types).
+        const AUDIO_EXTS = /\.(mp3|mp4|m4a|aac|ogg|oga|opus|wav|wave|flac|weba|webm|3gp|3g2)$/i;
+        const audioFiles = Array.from(files).filter(f => {
+            const mime = (f.type || '').toLowerCase();
+            return mime.startsWith('audio/')
+                || mime.startsWith('video/') // some phones tag m4a as video/mp4
+                || AUDIO_EXTS.test(f.name);
+        });
 
         if (!audioFiles.length) {
-            Utils.showToast('No audio files found', 'warning');
+            Utils.showToast(
+                'Tidak ada file audio ditemukan. Coba format: MP3, M4A, AAC, WAV, OGG.',
+                'warning', 5000
+            );
             return;
         }
 
-        Utils.showToast(`Loading ${audioFiles.length} file(s)…`, 'info');
-
+        Utils.showToast(`Memuat ${audioFiles.length} file…`, 'info', 2000);
         const startIdx = this.playlist.length;
 
         for (const file of audioFiles) {
@@ -161,12 +203,9 @@ class MediaModule {
         this._renderPlaylist();
         this._updateTrackCount();
 
-        // Auto-play first new track if nothing is playing
-        if (this.currentIdx === -1) {
-            this._playIndex(startIdx);
-        }
+        if (this.currentIdx === -1) this._playIndex(startIdx);
 
-        Utils.showToast(`✓ ${audioFiles.length} track(s) loaded`, 'success');
+        Utils.showToast(`✓ ${audioFiles.length} track dimuat`, 'success');
     }
 
     // ─────────────────────────────────────────────────────
