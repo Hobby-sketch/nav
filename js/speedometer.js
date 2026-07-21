@@ -395,37 +395,56 @@ class SpeedometerModule {
     }
 
     // ─────────────────────────────────────────────────────
-    //  ANIMATION LOOP — smooth speed towards target (unchanged)
+    //  ANIMATION LOOP — optimised RAF
+    //  • Throttled to 30 fps (halved repaint budget vs 60fps)
+    //  • Renders ONLY the active gauge (skips 2 hidden faces)
+    //  • Skips render entirely when speed delta < 0.1 km/h
     // ─────────────────────────────────────────────────────
     _startAnimation() {
-        const tick = () => {
-            const diff = this.targetSpeed - this.displaySpeed;
+        let lastTime   = 0;
+        let lastRender = -1;  // last rendered speed (avoids redundant DOM writes)
+        const INTERVAL = 33;  // ~30 fps
 
-            // Slower deceleration easing when stopped (engine wind-down feel)
+        const tick = (now) => {
+            this._animFrame = requestAnimationFrame(tick);
+
+            // Throttle: skip frames faster than 30 fps
+            if (now - lastTime < INTERVAL) return;
+            lastTime = now;
+
+            const diff   = this.targetSpeed - this.displaySpeed;
             const factor = this.vehicleStatus === 'STOPPED' ? 0.04 : 0.14;
             this.displaySpeed += diff * factor;
             if (Math.abs(diff) < 0.15) this.displaySpeed = this.targetSpeed;
 
-            this._renderSpeed();
-            this._animFrame = requestAnimationFrame(tick);
+            // Skip DOM writes when rounded speed hasn't changed
+            const spd = Math.round(this.displaySpeed);
+            if (spd === lastRender) return;
+            lastRender = spd;
+
+            this._renderSpeed(spd);
         };
         this._animFrame = requestAnimationFrame(tick);
     }
 
     // ─────────────────────────────────────────────────────
-    //  RENDER — drives all 3 speed faces simultaneously.
-    //  CSS shows only the one matching the active color theme; updating
-    //  all three unconditionally is cheap (3 cheap DOM writes) and
-    //  avoids JS branching on which theme is active. The shared
-    //  status column / info strip is updated once here (not 3×).
+    //  RENDER — active face only (performance optimisation)
+    //  Reads the live data-color-theme attribute to determine
+    //  which single face to update, skipping the two hidden ones.
+    //  Cluster icons + info strip are updated on every render.
     // ─────────────────────────────────────────────────────
-    _renderSpeed() {
-        const spd = Math.round(this.displaySpeed);
-        const zone = spd >= 140 ? 'danger' : (spd >= 100 ? 'warning' : 'normal');
+    _renderSpeed(spd) {
+        if (spd === undefined) spd = Math.round(this.displaySpeed);
+        const zone  = spd >= 140 ? 'danger' : (spd >= 100 ? 'warning' : 'normal');
+        const theme = document.documentElement.getAttribute('data-color-theme') || 'origin';
 
-        this._renderFaceOrigin(spd, zone);
-        this._renderFaceNexus(spd, zone);
-        this._renderFaceTechno(spd, zone);
+        // Render only the active face → 3× fewer DOM writes per frame
+        switch (theme) {
+            case 'nexus':  this._renderFaceNexus(spd, zone);  break;
+            case 'techno': this._renderFaceTechno(spd, zone); break;
+            default:       this._renderFaceOrigin(spd, zone); break;
+        }
+
         this._updateClusterStatusIcons();
         this._updateClusterInfoStrip();
     }
@@ -457,22 +476,23 @@ class SpeedometerModule {
      * exists). Visible behind all 3 themes (was Origin-only before).
      */
     _updateClusterStatusIcons() {
+        // GPS signal quality
         const gpsIcon = document.getElementById('cluster-icon-gps');
         if (gpsIcon) {
             const good = this.gpsSignal === 'EXCELLENT' || this.gpsSignal === 'GOOD';
             gpsIcon.classList.toggle('active', good);
         }
-
+        // Bluetooth connection
         const btIcon = document.getElementById('cluster-icon-bt');
         if (btIcon) {
             btIcon.classList.toggle('active', !!window.bluetoothModule?.hasConnectedDevice);
         }
-
+        // Voice assistant listening
         const voiceIcon = document.getElementById('cluster-icon-voice');
         if (voiceIcon) {
             voiceIcon.classList.toggle('active', !!window.voiceModule?.isListening);
         }
-
+        // Low battery warning
         const battIcon = document.getElementById('cluster-icon-battery');
         if (battIcon) {
             const lvl = window.app?.batteryLevel;

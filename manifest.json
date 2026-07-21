@@ -1,17 +1,19 @@
 {
   "name": "MotoDash — Premium Moto Dashboard",
   "short_name": "MotoDash",
-  "description": "Premium motorcycle dashboard with GPS speedometer, maps navigation, turn-by-turn routing, Bluetooth, and voice control.",
-  "start_url": "./index.html",
+  "description": "Premium motorcycle dashboard: GPS speedometer, vector maps, turn-by-turn navigation, Bluetooth, media, voice control.",
+  "start_url": "./index.html?pwa=1",
   "scope": "./",
 
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
 
   "orientation": "landscape",
   "theme_color": "#050505",
-  "background_color": "#050505",
-  "lang": "en",
+  "background_color": "#000000",
+
+  "lang": "id",
+  "dir": "ltr",
   "categories": ["navigation", "utilities", "travel"],
 
   "icons": [
@@ -47,12 +49,21 @@
     }
   ],
 
+  "screenshots": [],
+
   "shortcuts": [
     {
-      "name": "Open Maps",
+      "name": "Buka Maps",
       "short_name": "Maps",
-      "description": "Open GPS navigation map",
-      "url": "./index.html#maps",
+      "description": "Buka navigasi GPS",
+      "url": "./index.html?panel=maps",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Buka Trip",
+      "short_name": "Trip",
+      "description": "Buka trip computer",
+      "url": "./index.html?panel=trip",
       "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],

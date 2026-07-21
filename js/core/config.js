@@ -57,7 +57,12 @@ window.MotoDashConfig = {
         /** Pre-generated style JSON per [color-theme]-[time]. */
         styleDir: 'js/map-styles',
 
-        /** Geocoding (place search) — Nominatim, no API key. */
+        /** Overpass API — POI category search (no API key). */
+        overpass: {
+            endpoint: 'https://overpass-api.de/api/interpreter',
+            radiusM : 5000,   // default search radius around current position
+            maxResults: 20
+        },
         geocoder: {
             provider: 'nominatim',
             endpoint: 'https://nominatim.openstreetmap.org/search'

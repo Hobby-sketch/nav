@@ -182,9 +182,14 @@
     /* ───────────────────────────────────────────────────────────────
        4i. LAYOUT — non-token-scale structural constants
        ─────────────────────────────────────────────────────────────── */
-    --layout-status-h : 30px;
-    --layout-dock-h   : 66px;
-    --layout-left-w   : var(--brand-left-w);
+    --layout-status-h    : 44px;   /* was 30px — automotive min is 40-48px */
+    --layout-dock-h      : 72px;   /* was 66px — car launcher min touch target */
+    --layout-left-w      : var(--brand-left-w);
+
+    /* Radius shorthand for car launcher card language */
+    --radius-card     : 14px;
+    --radius-chip     : 20px;
+    --radius-pill     : 999px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -215,3 +220,25 @@
     --elevation-3: 0 8px 28px rgba(20,30,40,.14);
     --elevation-4: 0 16px 48px rgba(20,30,40,.18);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   TYPOGRAPHY SEMANTIC ALIASES — automotive HMI hierarchy
+   Widgets, panels and status bars reference these names instead
+   of raw --fs-* values so the entire dashboard rescales by
+   editing only this block.
+   ─────────────────────────────────────────────────────────────── */
+
+    /* Gauge / primary display */
+    --type-gauge-xl   : var(--fs-gauge-lg);   /* main speed digit */
+    --type-gauge-lg   : var(--fs-gauge-md);   /* secondary gauge  */
+    --type-gauge-sm   : var(--fs-gauge-sm);   /* small gauge      */
+
+    /* UI labels */
+    --type-heading    : var(--fs-xl);   /* 16px — panel titles  */
+    --type-subheading : var(--fs-lg);   /* 14px — section head  */
+    --type-body       : var(--fs-md);   /* 13px — body text     */
+    --type-caption    : var(--fs-base); /* 12px — captions      */
+    --type-label      : var(--fs-sm);   /* 10px — compact label */
+    --type-status     : var(--fs-xs);   /* 9px  — status text   */
+    --type-micro      : var(--fs-2xs);  /* 8px  — micro readout */
+    --type-nano       : var(--fs-3xs);  /* 7px  — tick label    */

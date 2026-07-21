@@ -31,18 +31,20 @@ class MotoDash {
         this._setupSettingsUI();
         this._setupQuickSettings();
         this._setupDialPad();
+        this._setupSwipeGesture();   // swipe between panels (car launcher UX)
         this._applyAutoTheme();
         this._registerSW();
         this._setupPWAInstall();
         this._subscribeEvents();
 
-        /* Switch to maps on start */
-        this.switchPanel('maps');
+        /* URL routing — manifest shortcuts pass ?panel=maps / ?panel=trip */
+        const urlPanel = new URLSearchParams(location.search).get('panel');
+        this.switchPanel(urlPanel || 'maps');
 
         /* Show the app and hide splash after a short boot sequence */
         this._hideSplash();
 
-        setTimeout(() => Utils.showToast('MotoDash ready — ride safe! 🏍', 'success'), 800);
+        setTimeout(() => Utils.showToast('MotoDash siap — berkendara aman! 🏍', 'success'), 800);
     }
 
     // ─────────────────────────────────────────────────────
@@ -107,16 +109,72 @@ class MotoDash {
         );
     }
 
+    // ─────────────────────────────────────────────────────
+    //  SWIPE GESTURE (car launcher horizontal swipe)
+    //  Swipe left/right on the RIGHT panel to navigate
+    //  between panels — same UX pattern as car launchers.
+    //  Left panel (speedometer) is excluded: it's always
+    //  the persistent instrument cluster.
+    // ─────────────────────────────────────────────────────
+    _setupSwipeGesture() {
+        const PANEL_ORDER = ['maps', 'trip', 'music', 'voice', 'phone', 'bluetooth', 'settings'];
+        const SWIPE_THRESHOLD  = 55;   // px horizontal movement to trigger
+        const SWIPE_MAX_VERT   = 80;   // px vertical tolerance
+        const SWIPE_MAX_DURATION = 500; // ms
+
+        let startX = 0, startY = 0, startTime = 0;
+
+        const rightPanel = document.getElementById('right-panel');
+        if (!rightPanel) return;
+
+        rightPanel.addEventListener('touchstart', (e) => {
+            const t = e.touches[0];
+            startX    = t.clientX;
+            startY    = t.clientY;
+            startTime = Date.now();
+        }, { passive: true });
+
+        rightPanel.addEventListener('touchend', (e) => {
+            const t     = e.changedTouches[0];
+            const dx    = t.clientX - startX;
+            const dy    = t.clientY - startY;
+            const dt    = Date.now() - startTime;
+
+            // Reject: too slow, too vertical, or not enough horizontal travel
+            if (dt > SWIPE_MAX_DURATION) return;
+            if (Math.abs(dy) > SWIPE_MAX_VERT) return;
+            if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+            const currentIdx = PANEL_ORDER.indexOf(this.currentPanel);
+            if (currentIdx === -1) return;
+
+            let nextIdx;
+            if (dx < 0) {
+                // Swipe left → next panel
+                nextIdx = Math.min(currentIdx + 1, PANEL_ORDER.length - 1);
+            } else {
+                // Swipe right → previous panel
+                nextIdx = Math.max(currentIdx - 1, 0);
+            }
+
+            if (nextIdx !== currentIdx) {
+                this.switchPanel(PANEL_ORDER[nextIdx]);
+            }
+        }, { passive: true });
+    }
+
     switchPanel(name) {
+        const PANEL_ORDER = ['maps', 'trip', 'music', 'voice', 'phone', 'bluetooth', 'settings'];
+        const prevIdx  = PANEL_ORDER.indexOf(this.currentPanel ?? 'maps');
+        const nextIdx  = PANEL_ORDER.indexOf(name);
+        const animDir  = nextIdx >= prevIdx ? 'anim-enter-right' : 'anim-enter-left';
+
         this.currentPanel = name;
 
-        // ── LAYER 1: inline styles (immune to CSS cache / stylesheet errors) ──
-        // element.style.display always wins over stylesheet rules, so this
-        // works correctly even when the browser is serving a stale CSS file
-        // from a previous service-worker cache version.
+        // Inline styles — immune to CSS cache issues
         document.querySelectorAll('.content-panel').forEach(p => {
             p.style.display = 'none';
-            p.classList.remove('active');
+            p.classList.remove('active', 'anim-enter-right', 'anim-enter-left');
         });
 
         document.querySelectorAll('.dock-btn').forEach(b =>
@@ -125,20 +183,17 @@ class MotoDash {
 
         const target = document.getElementById(`panel-${name}`);
         if (target) {
-            // flex + flex-direction:column so children fill height correctly
             target.style.display = 'flex';
             target.style.flexDirection = 'column';
             target.classList.add('active');
+            // Add directional animation class, then remove after it completes
+            target.classList.add(animDir);
+            setTimeout(() => target.classList.remove(animDir), 260);
         } else {
             console.warn(`[MotoDash] switchPanel: #panel-${name} not found`);
         }
 
-        // MapLibre WebGL canvas must be notified when its container
-        // changes from display:none to display:flex — otherwise the canvas
-        // has zero size and renders a blank grey rectangle.
         if (name === 'maps') {
-            // Double setTimeout: first tick lets the flex layout complete,
-            // second tick ensures MapLibre's internal RAF has fired.
             setTimeout(() => window.mapsModule?.resize(), 50);
             setTimeout(() => window.mapsModule?.resize(), 300);
         }
@@ -404,6 +459,12 @@ class MotoDash {
     setTimeMode(mode, fromManualClick = false) {
         this.settings.timeMode = mode;
         document.documentElement.setAttribute('data-time', mode);
+
+        // Update Android theme-color meta so system status bar matches app
+        const themeColorMeta = document.getElementById('theme-color-meta');
+        if (themeColorMeta) {
+            themeColorMeta.content = mode === 'day' ? '#E7ECF1' : '#050505';
+        }
 
         document.querySelectorAll('.daynight-btn, .qs-chip[data-time]:not(.qs-chip-auto)').forEach(b =>
             b.classList.toggle('active', b.dataset.time === mode)

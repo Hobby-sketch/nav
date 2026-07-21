@@ -93,83 +93,75 @@ class MediaModule {
 
         this.audio.addEventListener('error', (e) => {
             const code = e.target?.error?.code;
-            // Code 4 = NOT_SUPPORTED: browser can't decode this codec.
-            // This is not a fatal error — skip silently to next track.
+            const name = this.playlist[this.currentIdx]?.title || 'track';
+
             if (code === 4) {
-                const name = this.playlist[this.currentIdx]?.title || 'track';
-                console.warn(`[Media] NOT_SUPPORTED — skipping "${name}" (unsupported codec)`);
-                Utils.showToast(`Format tidak didukung: "${name}" — lanjut ke berikutnya`, 'warning', 3000);
-                setTimeout(() => this._next(), 800);
+                // NOT_SUPPORTED — this codec genuinely can't play in this browser.
+                // Determine the format so the user knows what to convert.
+                const file = this.playlist[this.currentIdx]?.file;
+                const ext  = (file?.name?.match(/\.([^.]+)$/) || [])[1]?.toUpperCase() || '?';
+                const msg  = `File ${ext} tidak bisa diputar di browser ini.\n`
+                           + `Konversi ke MP3 atau M4A untuk hasil terbaik.`;
+
+                console.warn(`[Media] NOT_SUPPORTED: "${name}" (${ext})`);
+                Utils.showToast(msg, 'error', 6000);
+
+                // Only auto-advance if there are more tracks to play
+                if (this.playlist.length > 1) {
+                    setTimeout(() => this._next(), 1500);
+                }
                 return;
             }
-            // Other codes (1=ABORTED, 2=NETWORK, 3=DECODE)
-            const labels = { 1:'File dibatalkan', 2:'Gagal memuat (network)', 3:'File rusak (decode error)' };
-            const label  = labels[code] || `Error (${code})`;
-            console.error(`[Media] Audio error ${code}:`, label);
-            Utils.showToast(`${label} — skipping`, 'error', 3000);
-            setTimeout(() => this._next(), 1200);
+
+            // Other codes: 1=ABORTED, 2=NETWORK, 3=DECODE
+            const labels = {
+                1: 'Pemuatan file dibatalkan',
+                2: 'Gagal memuat file (network)',
+                3: 'File rusak atau tidak lengkap',
+            };
+            const label = labels[code] || `Error tidak dikenal (kode ${code})`;
+            console.error(`[Media] Audio error ${code}: "${name}"`, e.target?.error);
+            Utils.showToast(`${label}: "${name}"`, 'error', 4000);
+            if (this.playlist.length > 1) setTimeout(() => this._next(), 1500);
         });
-    }
-
-    // ─────────────────────────────────────────────────────
-    //  CODEC SUPPORT DETECTION
-    //  Checked once at startup, used to filter files at load time
-    //  so NOT_SUPPORTED errors never reach the error handler.
-    // ─────────────────────────────────────────────────────
-    static _supportedFormats() {
-        const a = document.createElement('audio');
-        const can = (t) => a.canPlayType(t) !== '';
-        return {
-            mp3  : can('audio/mpeg'),
-            aac  : can('audio/aac') || can('audio/mp4'),
-            ogg  : can('audio/ogg; codecs="vorbis"'),
-            opus : can('audio/ogg; codecs="opus"'),
-            wav  : can('audio/wav'),
-            flac : can('audio/flac'),
-            m4a  : can('audio/mp4; codecs="mp4a.40.2"'),
-        };
-    }
-
-    _canPlay(file) {
-        const ext  = (file.name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
-        const mime = file.type?.toLowerCase();
-        const fmt  = MediaModule._supportedFormats();
-        if (ext === 'mp3'  || mime === 'audio/mpeg') return fmt.mp3;
-        if (ext === 'aac')                           return fmt.aac;
-        if (ext === 'm4a'  || mime === 'audio/mp4')  return fmt.m4a;
-        if (ext === 'ogg'  || mime === 'audio/ogg')  return fmt.ogg || fmt.opus;
-        if (ext === 'opus')                          return fmt.opus;
-        if (ext === 'wav'  || mime === 'audio/wav')  return fmt.wav;
-        if (ext === 'flac' || mime === 'audio/flac') return fmt.flac;
-        return true; // unknown — try anyway, error handler will skip
     }
 
     // ─────────────────────────────────────────────────────
     //  FILE LOADING
     // ─────────────────────────────────────────────────────
+    /**
+     * WHY NO canPlayType() PRE-CHECK:
+     * canPlayType() is unreliable on Android WebView and some Chrome
+     * variants — it returns '' for MP3/AAC even when the browser can
+     * play them perfectly. The audio element's error event (code 4 =
+     * NOT_SUPPORTED) is always accurate, so we rely on that instead
+     * and simply skip unsupported files at playback time.
+     */
     async _loadFiles(files) {
         if (!files || !files.length) return;
 
-        const allAudio = Array.from(files).filter(f =>
-            f.type.startsWith('audio/') || /\.(mp3|aac|ogg|wav|flac|m4a|opus)$/i.test(f.name)
-        );
+        // Accept anything that looks like audio — by MIME type OR
+        // by file extension (Android often sends empty/wrong MIME types).
+        const AUDIO_EXTS = /\.(mp3|mp4|m4a|aac|ogg|oga|opus|wav|wave|flac|weba|webm|3gp|3g2)$/i;
+        const audioFiles = Array.from(files).filter(f => {
+            const mime = (f.type || '').toLowerCase();
+            return mime.startsWith('audio/')
+                || mime.startsWith('video/') // some phones tag m4a as video/mp4
+                || AUDIO_EXTS.test(f.name);
+        });
 
-        // Filter out formats the browser definitively cannot play
-        const supported = allAudio.filter(f => this._canPlay(f));
-        const skipped   = allAudio.length - supported.length;
-
-        if (!supported.length) {
-            Utils.showToast('Tidak ada format audio yang didukung browser ini', 'warning');
+        if (!audioFiles.length) {
+            Utils.showToast(
+                'Tidak ada file audio ditemukan. Coba format: MP3, M4A, AAC, WAV, OGG.',
+                'warning', 5000
+            );
             return;
         }
-        if (skipped > 0) {
-            Utils.showToast(`${skipped} file dilewati (format tidak didukung)`, 'warning', 4000);
-        }
 
-        Utils.showToast(`Loading ${supported.length} file(s)…`, 'info');
+        Utils.showToast(`Memuat ${audioFiles.length} file…`, 'info', 2000);
         const startIdx = this.playlist.length;
 
-        for (const file of supported) {
+        for (const file of audioFiles) {
             const track = {
                 file,
                 url   : URL.createObjectURL(file),
@@ -213,7 +205,7 @@ class MediaModule {
 
         if (this.currentIdx === -1) this._playIndex(startIdx);
 
-        Utils.showToast(`✓ ${supported.length} track dimuat`, 'success');
+        Utils.showToast(`✓ ${audioFiles.length} track dimuat`, 'success');
     }
 
     // ─────────────────────────────────────────────────────

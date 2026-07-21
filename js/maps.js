@@ -26,6 +26,7 @@ class MapsModule {
         this.totalTime       = 0;     // seconds
         this._searchResults  = [];
         this._searchDebounce = null;
+        this._poiMarkers     = [];
 
         this._init();
     }
@@ -396,6 +397,145 @@ class MapsModule {
     }
 
     // ─────────────────────────────────────────────────────
+    //  POI CATEGORY SEARCH (Overpass API — no API key)
+    // ─────────────────────────────────────────────────────
+
+    static POI_TAGS = {
+        restaurant  : '["amenity"~"restaurant|food_court|fast_food|cafe"]',
+        fuel        : '["amenity"="fuel"]',
+        hospital    : '["amenity"~"hospital|clinic|doctors"]',
+        factory     : '["landuse"~"industrial"]["name"]',
+        mosque      : '["amenity"="place_of_worship"]["religion"="muslim"]',
+        school      : '["amenity"~"school|university|college|kindergarten"]',
+        hotel       : '["tourism"~"hotel|motel|guest_house|hostel"]',
+        bank        : '["amenity"~"bank|atm"]',
+        supermarket : '["shop"~"supermarket|convenience|minimarket|grocery"]',
+        parking     : '["amenity"="parking"]',
+        pharmacy    : '["amenity"~"pharmacy|chemist"]',
+    };
+
+    static POI_ICONS = {
+        restaurant:'🍽', fuel:'⛽', hospital:'🏥', factory:'🏭',
+        mosque:'🕌', school:'🏫', hotel:'🏨', bank:'🏦',
+        supermarket:'🛒', parking:'🅿', pharmacy:'💊', default:'📍'
+    };
+
+    async searchPOI(category) {
+        const pos = this.currentPos;
+        if (!pos) { Utils.showToast('GPS belum aktif — tunggu sinyal lokasi', 'warning'); return; }
+
+        const cfg    = window.MotoDashConfig.map.overpass;
+        const filter = MapsModule.POI_TAGS[category] || '["name"]';
+        const query  = `[out:json][timeout:15];\n(\n  node${filter}` +
+                       `(around:${cfg.radiusM},${pos.lat},${pos.lng});\n` +
+                       `  way${filter}(around:${cfg.radiusM},${pos.lat},${pos.lng});\n` +
+                       `);\nout center ${cfg.maxResults};`;
+
+        document.querySelectorAll('.poi-cat-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.cat === category)
+        );
+        Utils.showToast('Mencari…', 'info', 2000);
+
+        try {
+            const resp = await fetch(cfg.endpoint, {
+                method:'POST',
+                headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+                body:`data=${encodeURIComponent(query)}`
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            const results = data.elements
+                .map(el => ({
+                    lat    : el.lat ?? el.center?.lat,
+                    lng    : el.lon ?? el.center?.lon,
+                    name   : el.tags?.name || el.tags?.['name:id'] || el.tags?.['name:en']
+                             || (MapsModule.POI_ICONS[category] + ' ' + category),
+                    address: [el.tags?.['addr:street'], el.tags?.['addr:city']]
+                             .filter(Boolean).join(', '),
+                    category
+                }))
+                .filter(p => p.lat && p.lng)
+                .map(p => ({ ...p, distM: Utils.haversineDistance(pos.lat, pos.lng, p.lat, p.lng) }))
+                .sort((a,b) => a.distM - b.distM);
+
+            if (!results.length) {
+                Utils.showToast(`Tidak ada ${category} dalam ${cfg.radiusM/1000} km`, 'warning');
+                return;
+            }
+            this._placePOIMarkers(results, category);
+            this._renderPOIResults(results, category);
+        } catch(err) {
+            console.error('[Maps] Overpass:', err);
+            Utils.showToast('Gagal mencari POI — cek koneksi', 'error');
+        }
+    }
+
+    _placePOIMarkers(results, category) {
+        this._clearPOIMarkers();
+        this._poiMarkers = [];
+        const icon = MapsModule.POI_ICONS[category] || '📍';
+        results.forEach(poi => {
+            const el = document.createElement('div');
+            el.className = 'poi-map-marker';
+            el.textContent = icon;
+            el.title = poi.name;
+            el.addEventListener('click', () => this._selectDestination(poi.lat, poi.lng, poi.name));
+            this._poiMarkers.push(
+                new maplibregl.Marker({ element:el, anchor:'center' })
+                    .setLngLat([poi.lng, poi.lat])
+                    .addTo(this.provider.map)
+            );
+        });
+        // Fit map to show all results
+        if (results.length > 1) {
+            this.provider.fitBounds(results.map(p => ({ lat:p.lat, lng:p.lng })), 60);
+        }
+    }
+
+    _clearPOIMarkers() {
+        (this._poiMarkers||[]).forEach(m=>m.remove());
+        this._poiMarkers = [];
+    }
+
+    _renderPOIResults(results, category) {
+        const panel  = document.getElementById('poi-panel');
+        const list   = document.getElementById('poi-results-list');
+        const title  = document.getElementById('poi-panel-title');
+        const count  = document.getElementById('poi-panel-count');
+        const icon   = MapsModule.POI_ICONS[category] || '📍';
+        if (!panel||!list) return;
+
+        title.textContent = `${icon}  ${category.charAt(0).toUpperCase()+category.slice(1)}`;
+        count.textContent = `${results.length} tempat ditemukan`;
+        list.innerHTML = results.map(poi => `
+            <div class="poi-result-item"
+                 onclick="window.mapsModule?._selectDestination(${poi.lat},${poi.lng},'${
+                     poi.name.replace(/'/g,"\\'")}')">
+              <div class="poi-ri-icon">${icon}</div>
+              <div class="poi-ri-info">
+                <div class="poi-ri-name">${poi.name}</div>
+                ${poi.address ? `<div class="poi-ri-addr">${poi.address}</div>` : ''}
+                <div class="poi-ri-dist">${Utils.formatDistance(poi.distM)} dari lokasi Anda</div>
+              </div>
+              <div class="poi-ri-arrow">›</div>
+            </div>`).join('');
+        panel.style.display = 'flex';
+    }
+
+    _setupPOIButtons() {
+        document.querySelectorAll('.poi-cat-btn').forEach(btn =>
+            btn.addEventListener('click', () => this.searchPOI(btn.dataset.cat))
+        );
+        document.getElementById('poi-panel-close')?.addEventListener('click', () => {
+            const p = document.getElementById('poi-panel');
+            if (p) p.style.display = 'none';
+            document.querySelectorAll('.poi-cat-btn').forEach(b => b.classList.remove('active'));
+            this._clearPOIMarkers();
+        });
+    }
+
+    // ─────────────────────────────────────────────────────
     //  MAP CONTROLS
     // ─────────────────────────────────────────────────────
     centerOnLocation() {
@@ -427,6 +567,7 @@ class MapsModule {
             ?.addEventListener('click', () => this.centerOnLocation());
         document.getElementById('nav-stop-btn')
             ?.addEventListener('click', () => this.stopNavigation());
+        this._setupPOIButtons();
     }
 
     // ─────────────────────────────────────────────────────
